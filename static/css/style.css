@@ -1,0 +1,192 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500&family=REM:wght@500&display=swap');
+
+:root {
+  --btn-border-radius: 11px;
+  --box-border-radius: 18px;
+  --grey: rgb(128, 128, 128);
+  --lightgrey: rgb(201, 201, 201);
+}
+
+/*--------------------------------------------------------------
+# General
+--------------------------------------------------------------*/
+body {
+    font-family: 'Poppins';
+    color: var(--grey);
+    height: 100vh;
+    width: 100vw;
+    background: rgb(234, 234, 234);
+  }
+  
+  a {
+    text-decoration: none;
+    color: black;
+  }
+  
+  a:hover {
+    color: var(--grey);
+    text-decoration: none;
+  }
+
+  ul {
+    list-style: none;
+  }
+
+/*--------------------------------------------------------------
+# Header
+--------------------------------------------------------------*/
+#header {
+    transition: all 0.5s;
+    z-index: 997;
+    padding: 20px 0;
+  }
+
+/*--------------------------------------------------------------
+# Navigation Menu
+--------------------------------------------------------------*/
+/**
+* Desktop Navigation 
+*/
+.navbar {
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.navbar ul {
+  padding: 0;
+  display: flex;
+}
+
+
+.navbar a,
+.navbar a:focus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 35px 10px 0;
+  font-size: 15px;
+  color: var(--grey);
+  white-space: nowrap;
+  transition: 0.3s;
+}
+
+.navbar a i,
+.navbar a:focus i {
+  font-size: 12px;
+  line-height: 0;
+  margin-left: 5px;
+}
+
+.navbar a:hover,
+.navbar .active,
+.navbar .active:focus,
+.navbar li:hover>a {
+  color: black;
+}
+
+.navbar .getstarted,
+.navbar .getstarted:focus {
+  background: black;
+  padding: 10px 40px;
+  border-radius: var(--btn-border-radius);
+  color: #fff !important;
+  margin-left: 20px;
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar .register,
+.navbar .register:focus {
+  background: var(--lightgrey);
+  padding: 10px 40px;
+  border-radius: var(--btn-border-radius);
+  color: black;
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar .register:hover,
+.navbar .getstarted:hover {
+  transform: scale(1.05);
+}
+/**
+* Mobile Navigation 
+*/
+.mobile-nav-toggle {
+  color: var(--grey);
+  font-size: 28px;
+  cursor: pointer;
+  display: none;
+  line-height: 0;
+  transition: 0.5s;
+}
+
+.mobile-nav-toggle.bi-x {
+  color: #fff;
+}
+
+@media (max-width: 991px) {
+  .mobile-nav-toggle {
+    display: block;
+  }
+
+  .navbar ul {
+    display: none;
+  }
+}
+
+
+/*--------------------------------------------------------------
+# Index.html Boxes
+--------------------------------------------------------------*/
+.card {
+  width: 100%;
+  border-radius: 15px;
+  box-shadow: 0 -10px 10px rgba(0,0,0,0.15);
+  background-position: center;
+  background-size: cover;
+  border-radius: 30px;
+  transition: all 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+}
+
+.card-header {
+  padding-left: 30px;
+  font-size: 50px;
+  font-weight: bold;
+  color: var(--grey) !important;
+}
+
+.card-body h3 {
+  padding-left: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--grey) !important;
+}
+
+#card1 {
+  background-image: url('https://i.pinimg.com/564x/f2/c8/0f/f2c80fa6527e6d1f4d75e332af9fe75a.jpg');
+  height: 85vh;
+}
+
+#card2 {
+  background-image: url('https://i.pinimg.com/564x/60/03/94/6003942ae259094e0db10aa03ebbe3b7.jpg');
+  height: 45vh;
+}
+
+#card3 {
+  background-image: url('https://i.pinimg.com/564x/c2/5f/18/c25f18bb4da3c0015f6f4cec09a1944f.jpg');
+  height: 37vh;
+}
+
+#card4 {
+  background-image: url('https://i.pinimg.com/564x/22/96/f0/2296f0d55bab36f7d6c9547fd38ed979.jpg');
+  height: 37vh;
+}
+
+
+
+

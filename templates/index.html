@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Homepage
+{% endblock %}
+
+{% block body %}
+    {% include "navbar.html" %}
+    
+    <br><br>
+    <div class="row m-1 p-5">
+        <div class="col-md-6">
+            <!-- Card 1 -->
+            <a href="path/to/your/page1.html">
+                <div class="card" id="card1">
+                    <div class="card-header">
+                        FIND MY RELATIVES
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <!-- Card 2 -->
+            <a href="path/to/your/page2.html">
+                <div class="card mb-4" id="card2">
+                    <div class="card-header">
+                        MATCHING HISTORY
+                    </div>
+                </div>
+            </a>
+            <!-- Card 3 and 4 -->
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Card 3 -->
+                    <a href="path/to/your/page3.html">
+                        <div class="card card-body" id="card3">
+                            <h3 style="background: black">PUBLIC FINDING</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <!-- Card 4 -->
+                    <a href="path/to/your/page4.html">
+                        <div class="card card-body" id="card4">
+                            <h3 style="background: black">ABOUT US</h3>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+{% endblock %}
