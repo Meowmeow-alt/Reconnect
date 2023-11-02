@@ -136,11 +136,10 @@ body {
 
 
 /*--------------------------------------------------------------
-# Index.html Boxes
+# index.html Route
 --------------------------------------------------------------*/
 .card {
   width: 100%;
-  border-radius: 15px;
   box-shadow: 0 -10px 10px rgba(0,0,0,0.15);
   background-position: center;
   background-size: cover;
@@ -188,5 +187,33 @@ body {
 }
 
 
+/*--------------------------------------------------------------
+# login.html Route
+--------------------------------------------------------------*/
+.welcome {
+  text-align: center;
+  background: url('https://i.pinimg.com/564x/f2/c8/0f/f2c80fa6527e6d1f4d75e332af9fe75a.jpg');
+  background-position: center;
+  background-size: cover;
+}
+
+.box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  }
+
+  .box .login {
+    background: var(--lightgrey);
+    padding: 10px 40px;
+    border: none;
+    border-radius: var(--btn-border-radius);
+    color: black;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .box .login:hover {
+    transform: scale(1.05);
+  }
 
 
