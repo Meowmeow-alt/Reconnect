@@ -2,10 +2,10 @@
 
     <nav class="navbar mx-3 px-5">
         <ul>
-            <li><a href="index.html" class="{{ 'active' if request.path == '/' }}">Homepage</a></li>
-            <li><a href="portfolio.html" class="{{ 'active' if request.path == '/portfolio' }}">Your Profile</a></li>
-            <li><a href="services.html" class="{{ 'active' if request.path == '/services' }}">Contact Us</a></li>
-            <li><a href="pricing.html" class="{{ 'active' if request.path == '/pricing' }}">Pricing</a></li>
+            <li><a href="/" class="{{ 'active' if request.path == '/' }}">Homepage</a></li>
+            <li><a href="/portfolio" class="{{ 'active' if request.path == '/portfolio' }}">Your Profile</a></li>
+            <li><a href="/services" class="{{ 'active' if request.path == '/services' }}">Contact Us</a></li>
+            <li><a href="/pricing" class="{{ 'active' if request.path == '/pricing' }}">Pricing</a></li>
         </ul>
         <ul>
             {% if session['user_id'] %}
