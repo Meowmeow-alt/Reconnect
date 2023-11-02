@@ -2,15 +2,18 @@
 
     <nav class="navbar mx-3 px-5">
         <ul>
-            <li><a href="index.html" class="{{ 'active' if request.path == '/' }}">Home</a></li>
+            <li><a href="index.html" class="{{ 'active' if request.path == '/' }}">Homepage</a></li>
             <li><a href="portfolio.html" class="{{ 'active' if request.path == '/portfolio' }}">Your Profile</a></li>
-            <li><a href="services.html" class="{{ 'active' if request.path == '/services' }}">Services</a></li>
+            <li><a href="services.html" class="{{ 'active' if request.path == '/services' }}">Contact Us</a></li>
             <li><a href="pricing.html" class="{{ 'active' if request.path == '/pricing' }}">Pricing</a></li>
-            <li><a href="/logout" class="{{ 'active' if request.path == '/index' }}">Logout</a></li>
         </ul>
         <ul>
-            <li><a href="/register" class="register"">Register</a></li>
-            <li><a href="/login" class="getstarted">Login</a></li>
+            {% if session['user_id'] %}
+                <li><a href="/logout" class="getstarted">Logout</a></li>
+            {% else %}
+                <li><a href="/register" class="register">Register</a></li>
+                <li><a href="/login" class="getstarted">Login</a></li>
+            {% endif %}
         </ul>
         <i class="bi bi-list mobile-nav-toggle"></i>
     </nav>
