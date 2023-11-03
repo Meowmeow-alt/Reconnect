@@ -8,7 +8,7 @@ from addition import login_required
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
 
-db = SQL("sqlite:///user.db")
+db = SQL("sqlite:///finder.db")
 
 
 @app.after_request
@@ -19,6 +19,9 @@ def after_request(response):
     return response
 
 
+"""
+# ROUTE FOR BASE FEATURES
+"""
 @app.route('/', methods=['GET','POST'])
 def index():
     return render_template("index.html")
@@ -70,9 +73,48 @@ def register():
         
         hashpass = generate_password_hash(password)
         db.execute("INSERT INTO users (username, password) VALUES (?,?)", username, hashpass)
+
+        rows = db.execute("SELECT * FROM users WHERE username = ?", username)
+        session["user_id"] = rows[0]["id"]
         return redirect('/')
     
     return render_template('register.html')
+
+
+"""
+# ROUTE FOR MAIN FEATURES
+"""
+@app.route('/search', methods=['GET','POST'])
+@login_required
+def search():
+    return render_template('search.html')
+
+
+@app.route('/upload', methods=['GET','POST'])
+@login_required
+def upload():
+    return render_template('upload.html')
+
+
+@app.route('/result', methods=['GET','POST'])
+@login_required
+def result():
+    return render_template('result.html')
+
+
+@app.route('/contact', methods=['GET','POST'])
+@login_required
+def contact():
+    return render_template('contact.html')
+
+
+"""
+# ROUTE FOR SIDE PAGE ON NAVBAR
+"""
+@app.route('/portfolio', methods=['GET','POST'])
+@login_required
+def portfolio():
+    return render_template('portfolio.html')
 
 
 if __name__ == '__main__':
