@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Searching Page
+{% endblock %}
+
+{% block body %}
+    {% include "backbar.html" %}
+    <div class="container mt-5 pt-5">
+        <h2>Upload Image</h2>
+        <div class="mb-3">
+            <input type="file" class="form-control" id="imageUpload" accept="image/*">
+        </div>
+        <img id="imagePreview" src="#" alt="Image Preview" style="display: none;">
+        <button id="confirmButton" class="btn btn-primary mt-3">Confirm</button>
+    </div>
+{% endblock %}

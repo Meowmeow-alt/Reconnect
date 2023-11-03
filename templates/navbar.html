@@ -8,7 +8,7 @@
         </ul>
         <ul>
             {% if session['user_id'] %}
-                <li><a href="/logout" class="getstarted">Logout</a></li>
+                <li><a href="/logout" id="logout" class="getstarted">Logout</a></li>
             {% else %}
                 <li><a href="/register" class="register">Register</a></li>
                 <li><a href="/login" class="getstarted">Login</a></li>
