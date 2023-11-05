@@ -32,6 +32,10 @@ body {
     list-style: none;
   }
 
+  span {
+    color: yellow;
+  }
+
 /*--------------------------------------------------------------
 # Header
 --------------------------------------------------------------*/
@@ -172,7 +176,12 @@ body {
 }
 
 #card2 {
-  background-image: url('https://i.pinimg.com/564x/60/03/94/6003942ae259094e0db10aa03ebbe3b7.jpg');
+  width: 100%;
+  border-radius: 10px;
+  background-color: #333; 
+  color: white; 
+  padding: 20px;
+  /* background-image: url('https://i.pinimg.com/564x/60/03/94/6003942ae259094e0db10aa03ebbe3b7.jpg'); */
   height: 45vh;
 }
 
