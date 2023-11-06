@@ -8,7 +8,7 @@ from addition import login_required
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)
 
-db = SQL("sqlite:///finder.db")
+db = SQL("sqlite:///reconnect.db")
 
 
 @app.after_request
