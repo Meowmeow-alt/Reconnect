@@ -43,7 +43,7 @@ def login():
             return "invalid username and/or password", 403
 
         # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+        session["username"] = rows[0]["username"]
         return redirect('/')
 
     return render_template('login.html')
@@ -75,7 +75,7 @@ def register():
         db.execute("INSERT INTO users (username, password) VALUES (?,?)", username, hashpass)
 
         rows = db.execute("SELECT * FROM users WHERE username = ?", username)
-        session["user_id"] = rows[0]["id"]
+        session["username"] = rows[0]["username"]
         return redirect('/')
     
     return render_template('register.html')
