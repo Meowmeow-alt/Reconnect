@@ -18,6 +18,13 @@ Register
                 <div class="box container" style="max-width: 30vw;">
                     <div class="card-header" style="text-align: center;">Sign Up</div>
                     <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                          {% if messages %}
+                            <div class="alert alert-warning">
+                              {{ messages[0] }}
+                            </div>
+                          {% endif %}
+                        {% endwith %}
                         <form action="/register" method="POST">
                             <div class="form-group">
                                 <label for="username">Create Username</label>
