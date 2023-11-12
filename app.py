@@ -1,12 +1,20 @@
 from cs50 import SQL
-from flask import Flask, render_template, redirect, request, session, flash, g
+from flask import Flask, render_template, redirect, request, session, flash
 from werkzeug.security import check_password_hash, generate_password_hash
-import secrets
+from werkzeug.utils import secure_filename
+import os
+from flask_session import Session
+import json
 from addition import login_required
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(16)
+app.config['SECRET_KEY'] = 'for something secretive'
+app.config['IMG_FOLDER'] = 'static/img/images'
+app.config['PROFILE_FOLDER'] = 'static/img/profile'
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 
 db = SQL("sqlite:///reconnect.db")
 
@@ -29,21 +37,24 @@ def index():
 
 @app.route('/login', methods=['GET','POST'])
 def login():
-    session.clear()
-
     if request.method == 'POST':
         username = request.form.get("username")
         password = request.form.get("password")
 
         if not username or not password:
-            return "must provide username/password", 403
-        
+            flash("must provide username/password")
+            return redirect(request.url)
+
         rows = db.execute("SELECT * FROM users WHERE username = ?", username)
         if len(rows) != 1 or not check_password_hash(rows[0]["password"], password):
-            return "invalid username and/or password", 403
+            flash("invalid username and/or password")
+            return redirect(request.url)
 
-        # Remember which user has logged in
-        session["username"] = rows[0]["username"]
+        if rows[0]['person_details_id'] is None:
+            return redirect('/personal')
+
+        session["username"] = username
+        session['personal_details_id'] = rows[0]['person_details_id']
         return redirect('/')
 
     return render_template('login.html')
@@ -64,21 +75,69 @@ def register():
         confirm = request.form.get("confirmation")
 
         if not username or not password:
-            return "must provide username/password", 400
+            flash("must provide username/password")
+            return redirect(request.url)
         if password != confirm or not confirm:
             flash("Password and confirmation do not match!")
-        usernames = [row['username'] for row in db.execute("SELECT * FROM users")]
-        if username == usernames:
-            flash("Username already exists")
-        
+            return redirect(request.url)
+        usernames = db.execute("SELECT * FROM users WHERE username = ?", username)
+        if len(usernames) > 0:
+            flash("Username already exists, choose another one")
+            return redirect(request.url)
+
         hashpass = generate_password_hash(password)
         db.execute("INSERT INTO users (username, password) VALUES (?,?)", username, hashpass)
 
-        rows = db.execute("SELECT * FROM users WHERE username = ?", username)
-        session["username"] = rows[0]["username"]
-        return redirect('/')
-    
+        session["username"] = username
+        return redirect('/personal')
+
     return render_template('register.html')
+
+
+@app.route('/personal', methods=['GET', 'POST'])
+def personal():
+    if request.method == 'POST':
+        name = request.form.get('name').title()
+
+        age = int(request.form.get('age'))
+        if age not in range(1,180):
+            flash('Age Invalid')
+            return redirect(request.url)
+
+        city = int(request.form.get('city'))
+
+        sex = request.form.get('sex')
+        sex = 0 if sex == 'Female' else 1
+
+        height = int(request.form.get('height'))
+
+        marks = request.form.get('marks')
+
+        phone = request.form.get('phone')
+        if phone.isdigit() == False or len(phone) > 12 or len(phone) < 10:
+            flash('Invalid phone number')
+            return redirect(request.url)
+
+        mail = request.form.get('mail').lower()
+        if '@' not in mail and '.' not in mail:
+            flash('Invalid email address')
+            return redirect(request.url)
+
+        db.execute("INSERT INTO person_details (username, name, age, city, biological_sex, height, distinguishing_marks, phone, mail)\
+            VALUES (?,?,?,?,?,?,?,?,?)", session["username"], name, age, city, sex, height, marks, phone, mail)
+
+        rows = db.execute("SELECT id FROM person_details WHERE username = ?", session["username"])
+        person_details_id = rows[0]['id']
+        db.execute("UPDATE users SET person_details_id = ? WHERE username = ?", person_details_id, session["username"])
+
+        session['personal_details_id'] = person_details_id
+        return redirect('/')
+
+    with open('json/location.json', 'r') as f:
+            location = json.load(f)
+    with open('json/height.json', 'r') as f:
+            height = json.load(f)
+    return render_template('personal.html', location=location, height=height)
 
 
 """
@@ -114,7 +173,38 @@ def contact():
 @app.route('/portfolio', methods=['GET','POST'])
 @login_required
 def portfolio():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        
+        file = request.files['file']
+
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['PROFILE_FOLDER'], filename))
+            db.execute('INSERT INTO images (photo_path) VALUES (?)', os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            img_id = db.execute('SELECT last_insert_rowid()')[0]['last_insert_rowid()']
+            db.execute('UPDATE person_details SET img_id = ? WHERE username = ?', img_id, session['username'])
+
     return render_template('portfolio.html')
+
+
+"""
+# ERROR HANDLERS
+"""
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
 
 
 if __name__ == '__main__':
