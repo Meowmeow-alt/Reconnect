@@ -19,7 +19,7 @@ Register
                     <div class="card-header" style="text-align: center;">Sign Up</div>
                     <div class="card-body">
                         {% with messages = get_flashed_messages() %}
-                          {% if messages %}
+                          {% if messages and messages[0] %}
                             <div class="alert alert-warning">
                               {{ messages[0] }}
                             </div>

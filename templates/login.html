@@ -19,10 +19,10 @@ Login
                     <div class="card-header" style="text-align: center;">Login</div>
                     <div class="card-body">
                         {% with messages = get_flashed_messages %}
-                            {% if messages %}
-                                <div class="alert alert-warning">
-                                    {{ messages[0] }}
-                                </div>
+                            {% if messages and messages[0] %}
+                            <div class="alert alert-warning">
+                                {{ messages[0] }}
+                            </div>
                             {% endif %}
                         {% endwith %}
                         <form action="/login" method="POST">
