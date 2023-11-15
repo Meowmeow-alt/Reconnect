@@ -3,3 +3,7 @@ __pycache__/
 /*_session/
 test.ipynb
 test.py
+.DS_Store
+frontend/flask_session
+backend/flask_session
+backend/reconnect.db
