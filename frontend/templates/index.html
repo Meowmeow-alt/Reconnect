@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Homepage
+{% endblock %}
+
+{% block body %}
+    {% include "navbar.html" %}
+    
+    <br><br>
+    <div class="row m-4 p-3">
+        <div class="col-md-6">
+            <!-- Card 1 -->
+            <a href="/search">
+                <div class="card" id="card1">
+                    <div class="card-header">
+                        SEARCHING PAGE
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <!-- Card 2 -->
+            <div class="mb-4" id="card2">
+                <h2 style="border-bottom: 1px solid white; padding-bottom: 10px; color: yellow;">Reconnect</h2>
+                <p style="font-size: 18px; margin-top: 20px;">
+                    Reconnect is a platform designed to reunite families or friends 
+                    separated by natural disasters, wars, or time.<br><br>
+
+                    Users <span>upload a photo</span> of themselves or the person they are trying to 
+                    find. Our platform matches these photos and send notification to
+                    you if a match is found. Using <span>texts to describe</span> is also available<br><br>
+
+                    Reconnect is more than just a platform; it’s a beacon of hope for 
+                    those seeking to find their lost relatives and reconnect with them.<br><br>
+
+                    Join us in our mission to <span>bring families together!</span>
+                </p>
+            </div>
+            
+            
+            <!-- Card 3 and 4 -->
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Card 3 -->
+                    <a href="/result">
+                        <div class="card card-body" id="card3">
+                            <h3 style="background: black">MATCH RESULT</h3>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <!-- Card 4 -->
+                    <a href="/contact">
+                        <div class="card card-body" id="card4">
+                            <h3 style="background: black">CONTACT US</h3>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+{% endblock %}

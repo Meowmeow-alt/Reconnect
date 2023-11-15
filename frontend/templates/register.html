@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Register
+{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Welcome Back Section -->
+            <div class="vh-100 welcome">
+                <h1 class="pt-5" style="font-size: 70px;">Nice to see you<br>here with us!</h1>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <!-- Login Form -->
+            <div class="d-flex align-items-center vh-100">
+                <div class="box container" style="max-width: 30vw;">
+                    <div class="card-header" style="text-align: center;">Sign Up</div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                          {% if messages and messages[0] %}
+                            <div class="alert alert-warning">
+                              {{ messages[0] }}
+                            </div>
+                          {% endif %}
+                        {% endwith %}
+                        <form action="/register" method="POST">
+                            <div class="form-group">
+                                <label for="username">Create Username</label>
+                                <input type="text" class="form-control" name="username" id="username" autofocus required>
+                            </div>
+                            <div class="form-group my-3">
+                                <label for="password">Create Password</label>
+                                <input type="password" class="form-control" name="password" id="password" required>
+                            </div>
+                            <div class="form-group my-3">
+                                <label for="password">Confirm Password</label>
+                                <input type="password" class="form-control" name="confirmation" id="confirmation" autocomplete="off" required>
+                            </div>
+                            <div class="my-4" style="text-align: center;"><button type="submit" class="login">Sign me up</button></div>
+                        </form>
+                        Already have an account? > <a href="/login">Log in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
