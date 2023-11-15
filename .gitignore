@@ -1,2 +1,5 @@
 venv
-__pycache__
+__pycache__/
+/*_session/
+test.ipynb
+test.py
