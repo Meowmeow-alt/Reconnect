@@ -194,7 +194,7 @@ def portfolio():
     data = res.json()
     photo_path = data['photo_path'] if data['photo_path'] else None
 
-    return render_template('portfolio.html', photo_path=data['photo_path'], details=data['details'])
+    return render_template('portfolio.html', photo_path=data['photo_path'], details=data['details'], findme=False)
 
 
 
