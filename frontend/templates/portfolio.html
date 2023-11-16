@@ -22,12 +22,19 @@ Your Profile
             {% endwith %}
             <div class="row mb-4">
                 <form action="/portfolio" method="POST" enctype="multipart/form-data">
-                    <input type="file" name="file">
+                    <input type="file" name="file" accept="image/*">
                     <input type="submit" value="Upload File">
                 </form>                
             </div>
 
-            <a href="/personal"><button class="personal-update">Change my personal information</button></a>
+            <a href="/personal"><button class="personal-update mb-4">Change my personal information</button></a>
+            {% if findme == False %}
+                <div class="alert alert-warning">Noone can see your picture now, cannot be matched</div>
+                <a href="/verified"><button class="personal-update" style="background: darkgreen;">> Let others find me</button></a>
+            {% else %}
+                <div class="alert alert-success">Your picture is onsite, can be matched.</div>
+                <a href="/deverified"><button class="personal-update" style="background: darkred;">> Stop finding me</button></a>
+            {% endif %}
         </div>
 
         <div class="col-md-4">
@@ -38,7 +45,7 @@ Your Profile
 
                 <h3 class="mb-3">Your username:</h3>
                 <div class="alert alert-dark">{{ details['username'] }}</div>
-                
+
                 <h3 class="mb-3">Your age:</h3>
                 <div class="alert alert-dark">{{ details['age'] }}</div>
 
