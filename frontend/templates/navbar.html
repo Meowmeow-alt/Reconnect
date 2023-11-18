@@ -8,10 +8,10 @@
         </ul>
         <ul>
             {% if session['username'] %}
-                <li><a href="/logout" id="logout" class="getstarted">Logout</a></li>
+                <a href="/logout" id="logout"><button class="btn btn-dark">Logout</button></a>
             {% else %}
-                <li><a href="/register" class="register">Register</a></li>
-                <li><a href="/login" class="getstarted">Login</a></li>
+                <li><a href="/register"><button class="btn-secondary">Register</button></a></li>
+                <li><a href="/login"><button class="btn btn-dark">Login</button></a></li>
             {% endif %}
         </ul>
         <i class="bi bi-list mobile-nav-toggle"></i>

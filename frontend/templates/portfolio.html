@@ -27,13 +27,13 @@ Your Profile
                 </form>                
             </div>
 
-            <a href="/personal"><button class="personal-update mb-4">Change my personal information</button></a>
+            <a href="/personal"><button class="btn btn-dark mb-4" style="width: 100%;">Change my personal information</button></a>
             {% if findme == False %}
                 <div class="alert alert-warning">Noone can see your picture now, cannot be matched</div>
-                <a href="/verified"><button class="personal-update" style="background: darkgreen;">> Let others find me</button></a>
+                <a href="/verified"><button class="btn btn-success" style="width: 100%;">> Let others find me</button></a>
             {% else %}
                 <div class="alert alert-success">Your picture is onsite, can be matched.</div>
-                <a href="/deverified"><button class="personal-update" style="background: darkred;">> Stop finding me</button></a>
+                <a href="/deverified"><button class="btn btn-danger">> Stop finding me</button></a>
             {% endif %}
         </div>
 

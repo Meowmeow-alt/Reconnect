@@ -6,24 +6,48 @@ Public Finding
 
 {% block body %}
     {% include "backbar.html" %}
-    <br><br>
-    <div class="m-5 p-3">
-        <div class="row flex-row flex-nowrap area">
-            <div class="col-md-6 col-lg-4">
+    <br><br><br>
+    <div class="mx-5 area">
+        <div class="row">
+            <div class="col-sm-4 mb-3">
                 <div class="boxes">
-                    <a><button class="personal-update mb-2" id="con">Confirm</button></a>
-                    <a><button class="personal-update" id="dec">Decline</button></a>
+                    <div class="row gx-0">
+                        <div class="col-sm-6">
+                            <div style="height: 40vh;">
+                                <img src="https://hips.hearstapps.com/hmg-prod/images/ariana_grande_photo_jon_kopaloff_getty_images_465687098.jpg">
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div style="height: 40vh;">
+                                <img src="https://cdn.britannica.com/92/211792-050-E764F875/American-singer-Ariana-Grande-2018.jpg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-header" style="text-align:center;">Match!</div>
+                    <div class="p-3">
+                        <div style="text-align: center;">
+                            <h2 style="color: black;">Name: Ariana Grande</h2>
+                            <button class="btn btn-success">Accept Request</button>
+                            <button class="btn btn-danger">Decline Request</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="col-sm-4 mb-3">
                 <div class="boxes">2</div>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-sm-4 mb-3">
                 <div class="boxes">3</div>
             </div>
-            <div class="col-md-6 col-lg-4">
-                <div class="boxes">3</div>
+            <div class="col-sm-4 mb-3">
+                <div class="boxes">4</div>
+            </div>
+            <div class="col-sm-4 mb-3">
+                <div class="boxes">5</div>
             </div>
     </div>
 {% endblock %}
