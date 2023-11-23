@@ -4,7 +4,8 @@
   --btn-border-radius: 11px;
   --box-border-radius: 18px;
   --grey: rgb(128, 128, 128);
-  --lightgrey: rgb(201, 201, 201);
+  --light-grey: #d3d3d4;
+  --lightest-grey: rgb(201, 201, 201);
 }
 
 /*--------------------------------------------------------------
@@ -40,6 +41,13 @@ body {
     object-fit: cover;
     width: 100%;
     height: 100%;
+  }
+  
+  .btn {
+    transition: all 0.1s ease-in-out;
+  }
+  .btn:hover {
+    transform: scale(1.05);
   }
 
 /*--------------------------------------------------------------
@@ -95,29 +103,6 @@ body {
   color: black;
 }
 
-.navbar .getstarted,
-.navbar .getstarted:focus {
-  background: black;
-  padding: 10px 40px;
-  border-radius: var(--btn-border-radius);
-  color: #fff !important;
-  margin-left: 20px;
-  transition: all 0.2s ease-in-out;
-}
-
-.navbar .register,
-.navbar .register:focus {
-  background: var(--lightgrey);
-  padding: 10px 40px;
-  border-radius: var(--btn-border-radius);
-  color: black;
-  transition: all 0.2s ease-in-out;
-}
-
-.navbar .register:hover,
-.navbar .getstarted:hover {
-  transform: scale(1.05);
-}
 /**
 * Mobile Navigation 
 */
@@ -183,7 +168,6 @@ body {
 
 #card2 {
   width: 100%;
-  border-radius: 10px;
   background-color: #333; 
   color: white; 
   padding: 20px;
@@ -219,7 +203,7 @@ body {
   }
 
   .box .login {
-    background: var(--lightgrey);
+    background: var(--lightest-grey);
     padding: 10px 40px;
     border: none;
     border-radius: var(--btn-border-radius);
@@ -236,7 +220,7 @@ body {
 --------------------------------------------------------------*/
 #card5 {
   width: 100%;
-  border-radius: 30px;
+  border: 2px solid var(--light-grey);
   height: 42vh;
   overflow: hidden;
 }
@@ -245,13 +229,13 @@ body {
 #card7 {
   height: 85vh;
   padding: 20px;
+  border: 2px solid var(--light-grey);
 }
 
 #card8 {
   height: 85vh;
   padding: 20px;
-  background-color: var(--grey);
-  border-radius: var(--box-border-radius);
+  background-color: var(--light-grey);
   color: black;
   overflow: auto;
 }
@@ -260,33 +244,18 @@ body {
   overflow: auto;
 }
 
-.personal-update {
-  border: none;
-  background: black;
-  padding: 10px 40px;
-  border-radius: var(--btn-border-radius);
-  color: white;
-  width: 100%;
-  transition: all 0.2s ease-in-out;
-}
-
-.personal-update:hover {
-  transform: scale(1.05);
-}
-
-
 /*--------------------------------------------------------------
-# Portfolio
+# Match Result
 --------------------------------------------------------------*/
 .area {
-  height: auto;
-  overflow-x: auto;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 88vh;
 }
 
 .boxes {
-  padding: 30px;
-  border-radius: 30px;
-  height: 78vh;
-  background-color: var(--grey);
+  height: 70vh;
+  border: solid var(--light-grey) 2px;
+  background-color: var(--light-grey);
   color: white;
 }
