@@ -6,5 +6,121 @@ Searching Page
 
 {% block body %}
     {% include "backbar.html" %}
+    <br><br>
+    <div class="row m-4 p-3 gx-5">
+        <div class="col-md-9 area" style="height: 85vh;">
+            <div class="card-header mb-3" style="text-align: center;">Profiles of People to Search For</div>
+            <div class="row">
+                {% for person in people %}
+                <div class="col-sm-4 mb-3">
+                    <div class="boxes">
+                        <div class="row gx-0">
+                            <div style="height: 40vh;">
+                                <img src="{{ person['photo_path'] }}">
+                            </div>
+                        </div>
+                        <div class="p-3" style="color: black;">
+                            <h5>Name: {{ person['name'] }}</h5>
+                            <h5>Age: {{ person['age'] }}</h5>
+                            <h5>Gender: {{ "Female" if person['biological_sex'] == 0 else "Male" }}</h5>
+                            <h5>Last seen: {{ person['last_seen_year'] }}</h5>
+                        </div>
+                        <form action="/delete" method="POST">
+                            <input type="hidden" name="id" value="{{ person['id'] }}">
+                            <input type="hidden" name="photo_path" value="{{ person['photo_path'] }}">
+                            <button type="submit" class="btn btn-danger mt-1" style="width: 100%;">Delete Information</button>
+                        </form>                        
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right side bar -->
+        <div class="col-md-3">
+            <div class="mt-3" id="card7" style="height: 84vh; overflow-y: auto; overflow-x: hidden;">
+                <h3>Create New Profile</h3>
+                <hr>
+                {% with messages = get_flashed_messages %}
+                    {% if messages and messages[0] %}
+                        <div class="alert alert-warning">
+                            {{ messages[0] }}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <form action="/search" method="POST" enctype="multipart/form-data">
+                    <div class="form-group mb-3">
+                        <label for="name">Their Photo</label>
+                        <input type="file" name="file" accept="image/*">
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="name">Their Full Name</label>
+                        <input type="text" class="form-control" name="name" id="name" autofocus required>
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="age">Their Age</label>
+                        <input type="number" class="form-control" name="age" id="age" step="1" min="1" max="180" required>
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="ward">Distinguished mark</label>
+                        <input type="text" class="form-control" name="ward" id="ward" autocomplete="off">
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="sex">Biological Sex: </label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="sex" id="male" value="male" required>
+                            <label class="form-check-label" for="male">Male</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="sex" id="female" value="female" required>
+                            <label class="form-check-label" for="female">Female</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="city">Their City</label>
+                        <br>
+                        <select id="city" name="city">
+                            <option value="--Select a City--" disabled selected>--Select a City--</option>
+                            {% for key, value in location.items() %}
+                            <option value="{{ key }}">{{ value['name_with_type'] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="height">Their Height</label>
+                        <br>
+                        <select id="height" name="height">
+                            <option disabled selected>--Their approximate height--</option>
+                            {% for key, value in height.items() %}
+                            <option value="{{ key }}">{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="last">Last Seen Year</label>
+                        <input type="number" class="form-control" name="last" id="last" step="1" min="1700" required>
+                    </div>
+                    <div class="form-group my-3">
+                        <label for="relate">Your relationship to them</label>
+                        <br>
+                        <select id="relate" name="relate">
+                            <option disabled selected>--Relationship--</option>
+                            <option value="Parents/Grandparents">Parents/Grandparents</option>
+                            <option value="Siblings">Siblings</option>
+                            <option value="Relatives">Relatives</option>
+                            <option value="Friends">Friends</option>
+                            <option value="Neighborhood">Neighborhood</option>
+                            <option value="Strangers">Strangers</option>
+                        </select>
+                    </div>
+
+                    <a><button class="btn btn-dark mb-4" style="width: 100%;">Create New Profile</button></a>
+                </form>
+            </div>
+        </div>
+    </div>
     
 {% endblock %}
