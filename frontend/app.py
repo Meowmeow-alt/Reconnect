@@ -10,8 +10,6 @@ from addition import login_required
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'for something secretive'
-app.config['IMG_FOLDER'] = 'static/img/images'
-app.config['PROFILE_FOLDER'] = 'static/img/profile'
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
@@ -45,7 +43,7 @@ def login():
 
         res = requests.post('http://127.0.0.1:5001/login', json={'username':username, 'password':password})
 
-        if res.status_code == 403:
+        if res.status_code == 403 or res.status_code == 500:
             flash(res.text)
             return redirect(request.url)
         
@@ -84,7 +82,7 @@ def register():
         
         res = requests.post('http://127.0.0.1:5001/register', json={'username':username, 'password':password})
 
-        if res.status_code == 403:
+        if res.status_code == 403 or res.status_code == 500:
             flash(res.text)
             return redirect(request.url)
 
@@ -97,36 +95,56 @@ def register():
 @app.route('/personal', methods=['GET', 'POST'])
 def personal():
     if request.method == 'POST':
-        name = request.form.get('name').title()
+        name = request.form.get('name').title().strip()
 
-        age = int(request.form.get('age'))
-        if age not in range(1,180):
+        age = request.form.get('age')
+        if not age or int(age) not in range(1,180):
             flash('Age Invalid')
             return redirect(request.url)
+        age = int(age)
 
-        city = int(request.form.get('city'))
+        city = request.form.get('city')
+        if not city:
+            flash('City Invalid')
+            return redirect(request.url)
+        city = int(city)
 
         sex = request.form.get('sex')
+        if not sex:
+            flash('Gender Invalid')
+            return redirect(request.url)
         sex = 0 if str(sex).lower() == 'female' else 1
 
-        height = int(request.form.get('height'))
+        height = request.form.get('height')
+        if not height:
+            flash('Height Invalid')
+            return redirect(request.url)
+        height = int(height)
 
         marks = request.form.get('marks')
 
         phone = request.form.get('phone')
-        if phone.isdigit() == False or len(phone) > 12 or len(phone) < 10:
+        if not phone or phone.isdigit() == False or len(phone) > 12 or len(phone) < 10:
             flash('Invalid phone number')
             return redirect(request.url)
 
         mail = request.form.get('mail').lower()
-        if '@' not in mail and '.' not in mail:
+        if not mail or '@' not in mail or '.' not in mail:
             flash('Invalid email address')
             return redirect(request.url)
         
         res = requests.post('http://127.0.0.1:5001/personal', json={'username':session["username"], 'name':name, 'age':age,\
                                         'city':city, 'sex':sex, 'height':height, 'marks':marks, 'phone':phone, 'mail':mail})
 
-        session['person_details_id'] = res.json()['person_details_id']
+        if res.text:
+            try:
+                data = res.json()
+            except ValueError:
+                print("Invalid JSON")
+        else:
+            print("Empty Response")
+
+        session['person_details_id'] = data['person_details_id']
         return redirect('/')
 
     with open('json/location.json', 'r') as f:
@@ -142,13 +160,112 @@ def personal():
 @app.route('/search', methods=['GET','POST'])
 @login_required
 def search():
-    return render_template('search.html')
+    if request.method == 'POST':
+        # Photo
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+            
+        file = request.files['file']
+
+        if not file or file.filename == '' or not file.filename.lower().endswith(('.jpeg', '.png', '.jpg')):
+            flash('File Invalid')
+            return redirect(request.url)
+
+        #  Info
+        name = request.form.get('name').title().strip()
+        if not name:
+            flash('There must be a name')
+            return redirect(request.url)
+
+        age = request.form.get('age')
+        if not age or int(age) not in range(1,180):
+            flash('Age Invalid')
+            return redirect(request.url)
+        age = int(age)
+        
+        marks = request.form.get('marks')
+
+        sex = request.form.get('sex')
+        if not sex:
+            flash('Gender Invalid')
+            return redirect(request.url)
+        sex = 0 if str(sex).lower() == 'female' else 1
+
+        city = request.form.get('city')
+        if not city:
+            flash('City Invalid')
+            return redirect(request.url)
+        city = int(city)
+
+        height = request.form.get('height')
+        if not height:
+            flash('Height Invalid')
+            return redirect(request.url)
+        height = int(height)
+
+        last_seen = request.form.get('last')
+        if not last_seen or len(str(last_seen)) != 4 or int(last_seen) < 1700:
+            flash('Year Invalid format yyyy')
+            return redirect(request.url)
+        last_seen = int(last_seen)
+
+        phone, mail = 'None', 'None'
+
+        relate = request.form.get('relate')
+        if not relate:
+            flash('Relationship must be set')
+            return redirect(request.url)
+        
+        # Post to backend
+        files = {
+            'img': (file.filename, file, file.mimetype),
+            'relate': (None, str(relate)),
+            'username': (None, str(session["username"])),
+            'name': (None, str(name)),
+            'age': (None, str(age)),
+            'city': (None, str(city)),
+            'sex': (None, str(sex)),
+            'height': (None, str(height)),
+            'marks': (None, str(marks)),
+            'phone': (None, str(phone)),
+            'mail': (None, str(mail)),
+            'last_seen': (None, str(last_seen)),
+        }
+        
+        res = requests.post('http://127.0.0.1:5001/search', files=files)
+
+        if res.status_code == 403 or res.status_code == 500:
+            flash(res.text)
+            return redirect(request.url)
+        
+        return redirect(request.url)
+    
+    with open('json/location.json', 'r') as f:
+        location = json.load(f)
+    with open('json/height.json', 'r') as f:
+        height = json.load(f)
+
+    res = requests.get('http://127.0.0.1:5001/search', json={'username': session["username"]})
+    data = res.json()
+    for person in data['people']:
+        person['photo_path'] = "http://127.0.0.1:5001/get_image?photo_path=" + person['photo_path']
+
+    return render_template('search.html', location=location, height=height, people=data['people'])
 
 
-@app.route('/upload', methods=['GET','POST'])
-@login_required
-def upload():
-    return render_template('upload.html')
+@app.route('/delete', methods=['POST'])
+def delete():
+    id = request.form.get('id')
+    photo_path = request.form.get('photo_path')
+    res = requests.post('http://127.0.0.1:5001/delete', json={'id':id, 'photo_path':photo_path})
+
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+        return redirect(request.url)
+    
+    return redirect('/search')
+
 
 
 @app.route('/result', methods=['GET','POST'])
@@ -180,21 +297,22 @@ def portfolio():
             flash('File Invalid')
             return redirect(request.url)
 
-        filename = secure_filename(file.filename)
-        filename = str(uuid.uuid4()) + "_" + filename
-        photo_path = os.path.join(app.config['PROFILE_FOLDER'], filename)
-        file.save(photo_path)
-
-        res = requests.post('http://127.0.0.1:5001/portfolio', json={'photo_path': photo_path, 'person_details_id': session['person_details_id']})
+        files = {
+            'img': (file.filename, file, file.mimetype),
+            'person_details_id': (None, str(session['person_details_id']))
+        }
+        res = requests.post('http://127.0.0.1:5001/portfolio', files=files)
 
         session['person_details_id'] = res.json()['person_details_id']
         return redirect(request.url)
 
     res = requests.get('http://127.0.0.1:5001/portfolio', json={'person_details_id': session['person_details_id']})
     data = res.json()
-    photo_path = data['photo_path'] if data['photo_path'] else None
 
-    return render_template('portfolio.html', photo_path=data['photo_path'], details=data['details'], findme=False)
+    default_profile =  'https://img.myloview.com/stickers/default-avatar-profile-icon-vector-social-media-user-photo-700-205577532.jpg'
+    photo_path = "http://127.0.0.1:5001/get_image?photo_path=" + data['photo_path'] if data['photo_path'] else default_profile
+
+    return render_template('portfolio.html', photo_path=photo_path, details=data['details'], findme=False)
 
 
 
