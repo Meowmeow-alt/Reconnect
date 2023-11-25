@@ -267,7 +267,6 @@ def delete():
     return redirect('/search')
 
 
-
 @app.route('/result', methods=['GET','POST'])
 @login_required
 def result():
@@ -307,12 +306,27 @@ def portfolio():
         return redirect(request.url)
 
     res = requests.get('http://127.0.0.1:5001/portfolio', json={'person_details_id': session['person_details_id']})
+    
     data = res.json()
-
+    session['photo_path'] = data['photo_path']
     default_profile =  'https://img.myloview.com/stickers/default-avatar-profile-icon-vector-social-media-user-photo-700-205577532.jpg'
     photo_path = "http://127.0.0.1:5001/get_image?photo_path=" + data['photo_path'] if data['photo_path'] else default_profile
 
-    return render_template('portfolio.html', photo_path=photo_path, details=data['details'], findme=False)
+    return render_template('portfolio.html', photo_path=photo_path, details=data['details'])
+
+
+@app.route('/findme', methods=['GET','POST'])
+@login_required
+def findme():
+    requests.post('http://127.0.0.1:5001/findme', json={'person_details_id':session['person_details_id'], 'photo_path': session['photo_path']})
+    return redirect('/portfolio')
+
+
+@app.route('/disable_findme', methods=['GET','POST'])
+@login_required
+def disable_findme():
+    requests.post('http://127.0.0.1:5001/disable_findme', json={'username':session['username']})
+    return redirect('/portfolio')
 
 
 

@@ -9,4 +9,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    let del = document.querySelector("#delete");
+
+    del.addEventListener('click', function(event) {
+        let confirmation = confirm("Are you sure you want to delete this profile?");
+    
+        if (!confirmation) {
+            event.preventDefault();
+        }
+    });
+
 });

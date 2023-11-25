@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-Searching Page
+Finding Page
 {% endblock %}
 
 {% block body %}
@@ -11,7 +11,8 @@ Searching Page
         <div class="col-md-9 area" style="height: 85vh;">
             <div class="card-header mb-3" style="text-align: center;">Profiles of People to Search For</div>
             <div class="row">
-                {% for person in people %}
+            {% for person in people %}
+                {% if person['status'] != 1 %}
                 <div class="col-sm-4 mb-3">
                     <div class="boxes">
                         <div class="row gx-0">
@@ -28,11 +29,12 @@ Searching Page
                         <form action="/delete" method="POST">
                             <input type="hidden" name="id" value="{{ person['id'] }}">
                             <input type="hidden" name="photo_path" value="{{ person['photo_path'] }}">
-                            <button type="submit" class="btn btn-danger mt-1" style="width: 100%;">Delete Information</button>
-                        </form>                        
+                            <button type="submit" id="delete" class="btn btn-danger mt-1" style="width: 100%;">Delete Information</button>
+                        </form>
                     </div>
                 </div>
-                {% endfor %}
+                {% endif %}
+            {% endfor %}
             </div>
         </div>
 
@@ -117,7 +119,7 @@ Searching Page
                         </select>
                     </div>
 
-                    <a><button class="btn btn-dark mb-4" style="width: 100%;">Create New Profile</button></a>
+                    <button class="btn btn-dark mb-4" style="width: 100%;">Create New Profile</button>
                 </form>
             </div>
         </div>

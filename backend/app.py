@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 import cv2
 from insightface.app import FaceAnalysis
+from addition import get_embed, read
 
 
 app = Flask(__name__)
@@ -103,53 +104,95 @@ def personal():
 """
 # ROUTE FOR MAIN FEATURES
 """
-@app.route('/search', methods=['GET', 'POST'])
-def search():
-    if request.method == 'POST':
-        img = request.files['img']
-        filename = secure_filename(img.filename)
-        filename = str(uuid.uuid4()) + "_" + filename
-        photo_path = os.path.join(app.config['IMG_FOLDER'], filename)
-        
-        relate = request.form.get('relate')
-        username = request.form.get('username')
-        name = request.form.get('name')
-        age = request.form.get('age')
-        city = request.form.get('city')
-        sex = request.form.get('sex')
-        height = request.form.get('height')
-        marks = request.form.get('marks')
-        phone = request.form.get('phone')
-        mail = request.form.get('mail')
-        last_seen = request.form.get('last_seen')
+@app.route('/search', methods=['POST'])
+def search_post():
+    img = request.files['img']
+    filename = secure_filename(img.filename)
+    filename = str(uuid.uuid4()) + "_" + filename
+    photo_path = os.path.join(app.config['IMG_FOLDER'], filename)
+    
+    relate = request.form.get('relate')
+    username = request.form.get('username')
+    name = request.form.get('name')
+    age = request.form.get('age')
+    city = request.form.get('city')
+    sex = request.form.get('sex')
+    height = request.form.get('height')
+    marks = request.form.get('marks')
+    phone = request.form.get('phone')
+    mail = request.form.get('mail')
+    last_seen = request.form.get('last_seen')
 
-        rows = db.execute('SELECT * FROM person_details WHERE username = ?', username)
-        if rows:
-            row = rows[0]
-            if row['name'] == name and row['age'] == age and row['city'] == city and row['biological_sex'] == sex and\
-            row['height'] == height and row['last_seen_year'] == last_seen:
-                return "This profile already exists", 403
-        
-        db.execute("INSERT INTO images (photo_path, relationship) VALUES (?,?)", photo_path, relate)
- 
-        img_id = db.execute("SELECT last_insert_rowid() AS id")[0]["id"]
-        db.execute("INSERT INTO person_details (username, name, age, city, biological_sex, height, distinguishing_marks, phone, mail, last_seen_year, img_id)\
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)", username, name, age, city, sex, height, marks, phone, mail, last_seen, img_id)
+    rows = db.execute('SELECT * FROM person_details WHERE username = ?', username)
+    if rows:
+        row = rows[0]
+        if row['name'] == name and row['age'] == age and row['city'] == city and row['biological_sex'] == sex and\
+        row['height'] == height and row['last_seen_year'] == last_seen and row['status'] == False:
+            return "This profile already exists", 403
+    
+    db.execute("INSERT INTO images (photo_path, relationship) VALUES (?,?)", photo_path, relate)
 
-        img.save(photo_path)
-        return "Successfully", 200
+    img_id = db.execute("SELECT last_insert_rowid() AS id")[0]["id"]
+    person_details_id = db.execute("INSERT INTO person_details (username, name, age, city, biological_sex, height, distinguishing_marks, phone, mail, last_seen_year, img_id)\
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)", username, name, age, city, sex, height, marks, phone, mail, last_seen, img_id)
 
+    img.save(photo_path)
+
+    # define pickle file and numpy file
+    try:
+        mapping = pickle.load(open('uploads.pkl', 'rb'))
+    except:
+        mapping = []
+    
+    try:
+        old_embeds = np.load('uploads.npy')
+    except:
+        old_embeds = np.array([])
+    
+    # get embed from the image
+    photo_path = os.path.join('../backend', photo_path)
+    img = read(photo_path)
+    embed = get_embed(img)
+
+    # numpy embeds
+    if old_embeds.size > 0:
+        updated_embeds = np.vstack((old_embeds, embed)) if not np.array_equal(old_embeds[-1], embed) else None
     else:
-        data = request.get_json()
-        username = data.get('username')
+        updated_embeds = embed.reshape(1,-1)
 
-        people = db.execute(""" SELECT p.*, i.photo_path
-                                FROM person_details p
-                                JOIN images i ON p.img_id = i.id
-                                WHERE p.username = ? AND i.relationship != 'profile'
-                            """, username)
-        people.reverse()
-        return {'people':people}
+    if updated_embeds is not None:
+        np.save('uploads.npy', updated_embeds)
+
+    # pickle mapping
+    if not np.any(np.all(old_embeds == embed, axis=1)):
+        mapping.append(person_details_id)
+    else:
+        return "Fail to map", 403
+
+    with open('uploads.pkl', 'wb') as f:
+        pickle.dump(mapping, f)
+
+
+    print('Hellloooooooo',np.load('uploads.npy'))
+    with open('uploads.pkl', 'rb') as f:
+        data = pickle.load(f)
+    print('Hellloooooooo',data)
+
+    return "Successfully", 200
+
+
+@app.route('/search', methods=['GET'])
+def search_get():
+    data = request.get_json()
+    username = data.get('username')
+
+    people = db.execute(""" SELECT p.*, i.photo_path
+                            FROM person_details p
+                            JOIN images i ON p.img_id = i.id
+                            WHERE p.username = ? AND i.relationship != 'profile'
+                        """, username)
+    people.reverse()
+    return {'people':people}
 
 
 
@@ -158,10 +201,10 @@ def delete():
     if request.method == 'POST':
         data = request.get_json()
         id = data.get('id')
-        photo_path = data.get('photo_path')
+        photo_path = data.get('photo_path').split('=')[1]
 
         if photo_path:
-            photo_path = os.path.join('../frontend', photo_path)
+            photo_path = os.path.join('../backend', photo_path)
             if os.path.isfile(photo_path):
                 try:
                     os.remove(photo_path)
@@ -178,51 +221,108 @@ def delete():
 """
 # ROUTE FOR SIDE PAGE ON NAVBAR
 """
-@app.route('/portfolio', methods=['GET', 'POST'])
-def portfolio():
-    if request.method == 'POST':
-        person_details_id = request.form.get('person_details_id')
-        img = request.files['img']
-        filename = secure_filename(img.filename)
-        filename = str(uuid.uuid4()) + "_" + filename
-        photo_path = os.path.join(app.config['PROFILE_FOLDER'], filename)
-        img.save(photo_path)
+@app.route('/portfolio', methods=['POST'])
+def portfolio_post():
+    person_details_id = request.form.get('person_details_id')
+    img = request.files['img']
+    filename = secure_filename(img.filename)
+    filename = str(uuid.uuid4()) + "_" + filename
+    photo_path = os.path.join(app.config['PROFILE_FOLDER'], filename)
 
-        profile = db.execute('SELECT photo_path FROM images\
-                              JOIN person_details ON images.id = person_details.img_id\
-                              WHERE person_details.id = ?', person_details_id)
+    profile = db.execute('SELECT photo_path FROM images\
+                            JOIN person_details ON images.id = person_details.img_id\
+                            WHERE person_details.id = ?', person_details_id)
+    
+    if not profile: # path hasn't existed, create new photo_path and update img_id in person_details table
+        db.execute("INSERT INTO images (photo_path, relationship) VALUES (?, 'profile')", photo_path)
         
-        if not profile: # path hasn't existed, create new photo_path and update img_id in person_details table
-            db.execute("INSERT INTO images (photo_path, relationship) VALUES (?, 'profile')", photo_path)
+        img_id = db.execute("SELECT last_insert_rowid() AS id")[0]["id"]
+        db.execute("UPDATE person_details SET img_id = ? WHERE id = ?", img_id, person_details_id)
+
+    if profile: # path has already existed, update old_path with a new one.
+        old_path = profile[0]['photo_path']
+        old_path = os.path.join('../backend', old_path)
+
+        if os.path.isfile(old_path):
+            os.remove(old_path)
             
-            img_id = db.execute("SELECT last_insert_rowid() AS id")[0]["id"]
-            db.execute("UPDATE person_details SET img_id = ? WHERE id = ?", img_id, person_details_id)
+        img_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", person_details_id)[0]['img_id']
+        db.execute("UPDATE images SET photo_path = ? WHERE id = ?", photo_path, img_id)
+    
+    img.save(photo_path)
 
-        if profile: # path has already existed, update old_path with a new one.
-            old_path = profile[0]['photo_path']
-            old_path = os.path.join('../frontend', old_path)
+    # define pickle file and numpy file
+    try:
+        mapping = pickle.load(open('users.pkl', 'rb'))
+    except:
+        mapping = []
+    
+    try:
+        old_embeds = np.load('users.npy')
+    except:
+        old_embeds = np.array([])
+    
+    # get embed from the image
+    photo_path = os.path.join('../backend', photo_path)
+    img = read(photo_path)
+    embed = get_embed(img)
 
-            if os.path.isfile(old_path):
-                os.remove(old_path)
-                
-            img_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", person_details_id)[0]['img_id']
-            db.execute("UPDATE images SET photo_path = ? WHERE id = ?", photo_path, img_id)
-
-        return {'person_details_id':person_details_id}
-
+    # numpy embeds
+    if old_embeds.size == 0:
+        updated_embeds = embed.reshape(1,-1)
     else:
-        data = request.get_json()
-        person_details_id = data.get('person_details_id')
-        photo_path = db.execute('SELECT photo_path\
-                                  FROM images\
-                                  JOIN person_details ON images.id = person_details.img_id\
-                                  WHERE person_details.id = ?', person_details_id)
-        
-        person_details = db.execute("SELECT * FROM person_details WHERE id = ?", person_details_id)
-        
-        photo_path = photo_path[0]['photo_path'] if photo_path else None
+        updated_embeds = np.vstack((old_embeds, embed)) if not np.array_equal(old_embeds[-1], embed) else None
+    if updated_embeds is not None:
+        np.save('users.npy', updated_embeds)
 
-        return {'photo_path': photo_path, 'details': person_details[0]}
+    # pickle mapping
+    if not np.any(np.all(old_embeds == embed, axis=1)):
+        mapping.append(person_details_id)
+
+    with open('users.pkl', 'wb') as f:
+        pickle.dump(mapping, f)
+
+    return {'person_details_id':person_details_id}
+
+
+@app.route('/portfolio', methods=['GET'])
+def portfolio_get():
+    data = request.get_json()
+    person_details_id = data.get('person_details_id')
+    photo_path = db.execute('SELECT photo_path\
+                                FROM images\
+                                JOIN person_details ON images.id = person_details.img_id\
+                                WHERE person_details.id = ?', person_details_id)
+    
+    person_details = db.execute("""SELECT p.*, u.find_me
+                                    FROM person_details p
+                                    JOIN users u ON u.person_details_id = ?
+                                    WHERE id = ?""", person_details_id, person_details_id)
+    
+    photo_path = photo_path[0]['photo_path'] if photo_path else None
+
+    return {'photo_path': photo_path, 'details': person_details[0]}
+
+
+@app.route('/findme', methods=['GET','POST'])
+def findme():
+    data = request.get_json()
+    person_details_id = data.get('person_details_id')
+    
+    if person_details_id:
+        db.execute("UPDATE users SET find_me = TRUE WHERE person_details_id = ?", person_details_id)
+        return "Successfully loaded", 200
+    else:
+        return "Haven't upload profile pic", 403
+
+
+@app.route('/disable_findme', methods=['POST'])
+def disable_findme():
+    data = request.get_json()
+    username = data.get('username')
+    print(username)
+    db.execute("UPDATE users SET find_me = FALSE WHERE username = ?", username)
+    return "Successfully loaded", 200
 
 
 if __name__ == '__main__':
