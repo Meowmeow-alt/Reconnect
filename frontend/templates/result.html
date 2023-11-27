@@ -9,19 +9,28 @@ Public Finding
     <br><br><br>
     <div class="mx-5 area">
         <div class="card-header mb-3" style="text-align: center;">Matching Result</div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages and messages[0] %}
+            <div class="alert alert-warning">
+                {{ messages[0] }}
+            </div>
+            {% endif %}
+        {% endwith %}
+
         <div class="row">
+            {% for i in range(user|length) %}
             <div class="col-sm-4 mb-3">
                 <div class="boxes">
                     <div class="row gx-0">
                         <div class="col-sm-6">
                             <div style="height: 40vh;">
-                                <img src="https://hips.hearstapps.com/hmg-prod/images/ariana_grande_photo_jon_kopaloff_getty_images_465687098.jpg">
+                                <img src="{{ user[i]['photo_path'] }}">
                             </div>
                         </div>
 
                         <div class="col-sm-6">
                             <div style="height: 40vh;">
-                                <img src="https://cdn.britannica.com/92/211792-050-E764F875/American-singer-Ariana-Grande-2018.jpg">
+                                <img src="{{ pair[i]['photo_path'] }}">
                             </div>
                         </div>
                     </div>
@@ -29,26 +38,13 @@ Public Finding
                     <div class="card-header" style="text-align:center;">Match!</div>
                     <div class="p-3">
                         <div style="text-align: center;">
-                            <h2 style="color: black;">Name: Ariana Grande</h2>
-                            <button class="btn btn-success">Accept Request</button>
-                            <button class="btn btn-danger">Decline Request</button>
+                            <h2 style="color: black;">Name: {{ user[i]['name'] }}</h2>
+                            <button href="/accept" class="btn btn-danger">Decline Request</button>
+                            <button href="/decline" class="btn btn-success">Accept Request</button>
                         </div>
                     </div>
 
                 </div>
             </div>
-
-            <div class="col-sm-4 mb-3">
-                <div class="boxes">2</div>
-            </div>
-            <div class="col-sm-4 mb-3">
-                <div class="boxes">3</div>
-            </div>
-            <div class="col-sm-4 mb-3">
-                <div class="boxes">4</div>
-            </div>
-            <div class="col-sm-4 mb-3">
-                <div class="boxes">5</div>
-            </div>
-    </div>
+            {% endfor %}
 {% endblock %}

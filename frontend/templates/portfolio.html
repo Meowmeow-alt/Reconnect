@@ -13,13 +13,7 @@ Your Profile
             <div class="mb-4" id="card5">
                 <img src="{{ photo_path }}">
             </div>
-            {% with messages = get_flashed_messages %}
-                {% if messages and messages[0] %}
-                    <div class="alert alert-warning">
-                        {{ messages[0] }}
-                    </div>
-                {% endif %}
-            {% endwith %}
+            
             <div class="row mb-4">
                 <form action="/portfolio" method="POST" enctype="multipart/form-data">
                     <input type="file" name="file" accept="image/*">
@@ -27,9 +21,17 @@ Your Profile
                 </form>                
             </div>
 
+            {% with messages = get_flashed_messages() %}
+                {% if messages and messages[0] %}
+                    <div class="alert alert-warning">
+                        {{ messages[0] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
             <a href="/personal"><button class="btn btn-dark mb-4" style="width: 100%;">Change my personal information</button></a>
             {% if details['find_me'] == 0 %}
-                <div class="alert alert-warning">Noone can see your picture now, cannot be matched</div>
+                <div class="alert alert-danger">Noone can see your picture now, cannot be matched</div>
                 <a href="/findme"><button class="btn btn-success" style="width: 100%;">> Let others find me</button></a>
             {% else %}
                 <div class="alert alert-success">Your picture is onsite, can be matched.</div>

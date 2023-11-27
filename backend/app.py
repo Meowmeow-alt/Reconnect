@@ -6,6 +6,7 @@ import os
 from flask_session import Session
 import uuid
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 import pickle
 import cv2
 from insightface.app import FaceAnalysis
@@ -156,7 +157,7 @@ def search_post():
 
     # numpy embeds
     if old_embeds.size > 0:
-        updated_embeds = np.vstack((old_embeds, embed)) if not np.array_equal(old_embeds[-1], embed) else None
+        updated_embeds = np.vstack((old_embeds, embed)) if not any(np.array_equal(embed, old) for old in old_embeds) else None
     else:
         updated_embeds = embed.reshape(1,-1)
 
@@ -164,19 +165,13 @@ def search_post():
         np.save('uploads.npy', updated_embeds)
 
     # pickle mapping
-    if not np.any(np.all(old_embeds == embed, axis=1)):
+    if not any(np.array_equal(embed, old) for old in old_embeds):
         mapping.append(person_details_id)
     else:
         return "Fail to map", 403
 
     with open('uploads.pkl', 'wb') as f:
         pickle.dump(mapping, f)
-
-
-    print('Hellloooooooo',np.load('uploads.npy'))
-    with open('uploads.pkl', 'rb') as f:
-        data = pickle.load(f)
-    print('Hellloooooooo',data)
 
     return "Successfully", 200
 
@@ -209,7 +204,6 @@ def delete():
                 try:
                     os.remove(photo_path)
                 except Exception as e:
-                    print("Error deleting file: ", e)
                     return "Failed to delete file", 500
 
         db.execute("UPDATE person_details SET status = TRUE WHERE id = ?", id)
@@ -217,6 +211,96 @@ def delete():
     return "Successfully delete", 200
 
 
+@app.route('/result', methods=['GET'])
+def result():
+    """
+    Prepare files and datas
+    """
+    other_embeds = np.load('uploads.npy')
+    user_embeds = np.load('users.npy')
+    with open('uploads.pkl', 'rb') as f:
+        other_ids = pickle.load(f)
+    with open('users.pkl', 'rb') as f:
+        user_ids = pickle.load(f)
+
+    data = request.get_json()
+    username = data['username']
+
+    people = db.execute("SELECT * FROM person_details WHERE username = ?", username)
+    status = [person['status'] for person in people]
+    ids = [person['id'] for person in people if person['status'] == 0]
+
+    for id in ids:
+        find_me = db.execute("SELECT find_me FROM users WHERE person_details_id = ?", id)
+        ids = [id for id in ids if all(find['find_me'] != 0 for find in find_me)]
+    
+    """
+    Cosine similarity section
+    """
+    similarity_matrix = cosine_similarity(user_embeds, other_embeds)
+
+    threshold = 0.56
+    pairs = []
+    for i in range(similarity_matrix.shape[0]):
+        for j in range(similarity_matrix.shape[1]):
+            number = similarity_matrix[i, j]
+            if number > threshold:
+                user_id = user_ids[i]
+                other_id = other_ids[j]
+                pairs.append((user_id, other_id))
+
+                try:
+                    existing_match = db.execute("SELECT * FROM matches WHERE person_details_id1 = ? AND person_details_id2 = ?", user_id, other_id)[0]['match_score']
+                except:
+                    existing_match = None
+                score = round(float(number),4)
+
+                if not existing_match:
+                    img1_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", user_id)[0]['img_id']
+                    img2_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", other_id)[0]['img_id']
+
+                    db.execute("INSERT INTO matches (img1_id, img2_id, person_details_id1, person_details_id2, status, match_score) VALUES (?, ?, ?, ?, 'onsite', ?)",
+                                img1_id, img2_id, user_id, other_id, score)
+                    
+                if existing_match != score:
+                    db.execute("UPDATE matches SET match_score = ? WHERE person_details_id1 = ? AND person_details_id2 = ?", score, user_id, other_id)
+
+    check = [None if id[0] not in ids and id[1] not in ids else 1 for id in pairs]
+    
+    if not check:
+        return "No match at the moment", 403
+
+    if not any(s == 0 for s in status):
+        return "No match at the moment.", 403
+    
+    """
+    Matching result section
+    """
+    user = []
+    pair = []
+
+    for session_id, pair_id in pairs:
+        if session_id in ids or pair_id in ids:
+            user_details = db.execute("""SELECT p.*, i.photo_path
+                                        FROM person_details p
+                                        JOIN images i ON p.img_id = i.id
+                                        WHERE p.id = ?
+                                    """, session_id)
+            pair_details = db.execute("""SELECT p.*, i.photo_path
+                                        FROM person_details p
+                                        JOIN images i ON p.img_id = i.id
+                                        WHERE p.id = ?
+                                    """, pair_id)
+            user.append(user_details[0])
+            pair.append(pair_details[0])
+
+    return {'user':user, 'pair':pair}
+
+
+# @app.route('/decline', methods=['GET'])
+# def decline():
+#     f
+    
 
 """
 # ROUTE FOR SIDE PAGE ON NAVBAR
@@ -271,13 +355,13 @@ def portfolio_post():
     if old_embeds.size == 0:
         updated_embeds = embed.reshape(1,-1)
     else:
-        updated_embeds = np.vstack((old_embeds, embed)) if not np.array_equal(old_embeds[-1], embed) else None
+        updated_embeds = np.vstack((old_embeds, embed)) if not any(np.array_equal(embed, old) for old in old_embeds) else None
     if updated_embeds is not None:
         np.save('users.npy', updated_embeds)
 
     # pickle mapping
-    if not np.any(np.all(old_embeds == embed, axis=1)):
-        mapping.append(person_details_id)
+    if not any(np.array_equal(embed, old) for old in old_embeds):
+        mapping.append(int(person_details_id))
 
     with open('users.pkl', 'wb') as f:
         pickle.dump(mapping, f)
@@ -289,12 +373,12 @@ def portfolio_post():
 def portfolio_get():
     data = request.get_json()
     person_details_id = data.get('person_details_id')
-    photo_path = db.execute('SELECT photo_path\
-                                FROM images\
-                                JOIN person_details ON images.id = person_details.img_id\
-                                WHERE person_details.id = ?', person_details_id)
+    photo_path = db.execute(""" SELECT photo_path
+                                FROM images
+                                JOIN person_details ON images.id = person_details.img_id
+                                WHERE person_details.id = ?""", person_details_id)
     
-    person_details = db.execute("""SELECT p.*, u.find_me
+    person_details = db.execute(""" SELECT p.*, u.find_me
                                     FROM person_details p
                                     JOIN users u ON u.person_details_id = ?
                                     WHERE id = ?""", person_details_id, person_details_id)
@@ -308,19 +392,20 @@ def portfolio_get():
 def findme():
     data = request.get_json()
     person_details_id = data.get('person_details_id')
+
+    img_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", person_details_id)[0]['img_id']
     
-    if person_details_id:
+    if img_id:
         db.execute("UPDATE users SET find_me = TRUE WHERE person_details_id = ?", person_details_id)
         return "Successfully loaded", 200
     else:
-        return "Haven't upload profile pic", 403
+        return "Please upload your profile photo first.", 403
 
 
 @app.route('/disable_findme', methods=['POST'])
 def disable_findme():
     data = request.get_json()
     username = data.get('username')
-    print(username)
     db.execute("UPDATE users SET find_me = FALSE WHERE username = ?", username)
     return "Successfully loaded", 200
 

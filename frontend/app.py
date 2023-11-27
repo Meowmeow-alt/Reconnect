@@ -136,14 +136,7 @@ def personal():
         res = requests.post('http://127.0.0.1:5001/personal', json={'username':session["username"], 'name':name, 'age':age,\
                                         'city':city, 'sex':sex, 'height':height, 'marks':marks, 'phone':phone, 'mail':mail})
 
-        if res.text:
-            try:
-                data = res.json()
-            except ValueError:
-                print("Invalid JSON")
-        else:
-            print("Empty Response")
-
+        data = res.json()
         session['person_details_id'] = data['person_details_id']
         return redirect('/')
 
@@ -255,6 +248,7 @@ def search():
 
 
 @app.route('/delete', methods=['POST'])
+@login_required
 def delete():
     id = request.form.get('id')
     photo_path = request.form.get('photo_path')
@@ -267,10 +261,41 @@ def delete():
     return redirect('/search')
 
 
-@app.route('/result', methods=['GET','POST'])
+@app.route('/result', methods=['GET'])
 @login_required
 def result():
-    return render_template('result.html')
+    res = requests.get('http://127.0.0.1:5001/result', json={'username': session["username"]})
+    
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+        return render_template('result.html')
+    
+    try:
+        data = res.json()
+    except requests.exceptions.JSONDecodeError:
+        flash("No data to decode")
+        return render_template('result.html')
+    
+    for person in data['user']:
+        person['photo_path'] = "http://127.0.0.1:5001/get_image?photo_path=" + person['photo_path']
+    for person in data['pair']:
+        person['photo_path'] = "http://127.0.0.1:5001/get_image?photo_path=" + person['photo_path']
+    
+    return render_template('result.html', user=data['user'], pair=data['pair'])
+
+
+@app.route('/decline', methods=['POST'])
+@login_required
+def decline():
+    # id = request.form.get('id')
+    # photo_path = request.form.get('photo_path')
+    # res = requests.post('http://127.0.0.1:5001/delete', json={'id':id, 'photo_path':photo_path})
+
+    # if res.status_code == 403 or res.status_code == 500:
+    #     flash(res.text)
+    #     return redirect(request.url)
+    
+    return redirect('/result')
 
 
 @app.route('/contact', methods=['GET','POST'])
@@ -318,7 +343,11 @@ def portfolio():
 @app.route('/findme', methods=['GET','POST'])
 @login_required
 def findme():
-    requests.post('http://127.0.0.1:5001/findme', json={'person_details_id':session['person_details_id'], 'photo_path': session['photo_path']})
+    res = requests.post('http://127.0.0.1:5001/findme', json={'person_details_id':session['person_details_id'], 'photo_path': session['photo_path']})
+    
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+
     return redirect('/portfolio')
 
 

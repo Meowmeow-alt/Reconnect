@@ -52,6 +52,13 @@ Finding Page
                 {% endwith %}
 
                 <form action="/search" method="POST" enctype="multipart/form-data">
+                    {% with messages = get_flashed_messages() %}
+                          {% if messages and messages[0] %}
+                            <div class="alert alert-warning">
+                              {{ messages[0] }}
+                            </div>
+                          {% endif %}
+                        {% endwith %}
                     <div class="form-group mb-3">
                         <label for="name">Their Photo</label>
                         <input type="file" name="file" accept="image/*">
