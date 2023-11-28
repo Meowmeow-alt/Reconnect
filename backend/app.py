@@ -38,6 +38,8 @@ def after_request(response):
 @app.route('/get_image', methods=['GET'])
 def get_image():
     photo_path = request.args.get('photo_path')
+    if photo_path.split('/')[-1] == 'None':
+        return "This profile has been deleted", 403
     return send_file(photo_path, mimetype='image/jpeg')
 
 
@@ -207,6 +209,13 @@ def delete():
                     return "Failed to delete file", 500
 
         db.execute("UPDATE person_details SET status = TRUE WHERE id = ?", id)
+        db.execute("""UPDATE images
+                      SET photo_path = 'None'
+                      WHERE id IN (
+                      SELECT img_id 
+                      FROM person_details 
+                      WHERE id = ?
+                    );""", id)
 
     return "Successfully delete", 200
 
@@ -228,11 +237,14 @@ def result():
 
     people = db.execute("SELECT * FROM person_details WHERE username = ?", username)
     status = [person['status'] for person in people]
-    ids = [person['id'] for person in people if person['status'] == 0]
 
+    ids = [person['id'] for person in people if person['status'] == 0]
+    filtered_ids = []
     for id in ids:
         find_me = db.execute("SELECT find_me FROM users WHERE person_details_id = ?", id)
-        ids = [id for id in ids if all(find['find_me'] != 0 for find in find_me)]
+        if all(find['find_me'] != 0 for find in find_me):
+            filtered_ids.append(id) 
+    ids = filtered_ids
     
     """
     Cosine similarity section
@@ -249,21 +261,31 @@ def result():
                 other_id = other_ids[j]
                 pairs.append((user_id, other_id))
 
-                try:
-                    existing_match = db.execute("SELECT * FROM matches WHERE person_details_id1 = ? AND person_details_id2 = ?", user_id, other_id)[0]['match_score']
-                except:
-                    existing_match = None
-                score = round(float(number),4)
+    uu = [db.execute("""SELECT p.id, i.photo_path FROM images i
+                          JOIN person_details p ON p.img_id = i.id
+                          WHERE p.id = ?""", id)[0] for id, _ in pairs]
+    pp = [db.execute("""SELECT p.id, i.photo_path FROM images i
+                          JOIN person_details p ON p.img_id = i.id
+                          WHERE p.id = ?""", id)[0] for _, id in pairs]
 
-                if not existing_match:
-                    img1_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", user_id)[0]['img_id']
-                    img2_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", other_id)[0]['img_id']
+    pairs = [(u['id'], p['id']) for u, p in zip(uu, pp) if u['photo_path'] != 'None' and p['photo_path'] != 'None']
 
-                    db.execute("INSERT INTO matches (img1_id, img2_id, person_details_id1, person_details_id2, status, match_score) VALUES (?, ?, ?, ?, 'onsite', ?)",
-                                img1_id, img2_id, user_id, other_id, score)
-                    
-                if existing_match != score:
-                    db.execute("UPDATE matches SET match_score = ? WHERE person_details_id1 = ? AND person_details_id2 = ?", score, user_id, other_id)
+    for user_id, other_id in pairs:
+        try:
+            existing_match = db.execute("SELECT * FROM matches WHERE person_details_id1 = ? AND person_details_id2 = ?", user_id, other_id)[0]['match_score']
+        except:
+            existing_match = None
+        score = round(float(number),4)
+
+        if not existing_match:
+            img1_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", user_id)[0]['img_id']
+            img2_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", other_id)[0]['img_id']
+
+            db.execute("INSERT INTO matches (img1_id, img2_id, person_details_id1, person_details_id2, status, match_score) VALUES (?, ?, ?, ?, 'onsite', ?)",
+                        img1_id, img2_id, user_id, other_id, score)
+            
+        if existing_match != score:
+            db.execute("UPDATE matches SET match_score = ? WHERE person_details_id1 = ? AND person_details_id2 = ?", score, user_id, other_id)
 
     check = [None if id[0] not in ids and id[1] not in ids else 1 for id in pairs]
     
@@ -273,26 +295,34 @@ def result():
     if not any(s == 0 for s in status):
         return "No match at the moment.", 403
     
+    print("Hellooooooooooooo pairs", pairs)
+    
     """
     Matching result section
     """
     user = []
     pair = []
+    existed_ids = []
 
     for session_id, pair_id in pairs:
         if session_id in ids or pair_id in ids:
-            user_details = db.execute("""SELECT p.*, i.photo_path
-                                        FROM person_details p
-                                        JOIN images i ON p.img_id = i.id
-                                        WHERE p.id = ?
-                                    """, session_id)
-            pair_details = db.execute("""SELECT p.*, i.photo_path
-                                        FROM person_details p
-                                        JOIN images i ON p.img_id = i.id
-                                        WHERE p.id = ?
-                                    """, pair_id)
-            user.append(user_details[0])
-            pair.append(pair_details[0])
+            print("Hellooooooooooooo session_id", session_id)
+            print("Hellooooooooooooo pair_id", pair_id)
+            if session_id not in existed_ids and pair_id not in existed_ids:
+                user_details = db.execute("""SELECT p.*, i.photo_path
+                                            FROM person_details p
+                                            JOIN images i ON p.img_id = i.id
+                                            WHERE p.id = ?
+                                        """, session_id)
+                pair_details = db.execute("""SELECT p.*, i.photo_path
+                                            FROM person_details p
+                                            JOIN images i ON p.img_id = i.id
+                                            WHERE p.id = ?
+                                        """, pair_id)
+                user.append(user_details[0])
+                pair.append(pair_details[0])
+                existed_ids.append(session_id)
+                existed_ids.append(pair_id)
 
     return {'user':user, 'pair':pair}
 
@@ -373,6 +403,8 @@ def portfolio_post():
 def portfolio_get():
     data = request.get_json()
     person_details_id = data.get('person_details_id')
+    username = data.get('username')
+
     photo_path = db.execute(""" SELECT photo_path
                                 FROM images
                                 JOIN person_details ON images.id = person_details.img_id
@@ -385,7 +417,12 @@ def portfolio_get():
     
     photo_path = photo_path[0]['photo_path'] if photo_path else None
 
-    return {'photo_path': photo_path, 'details': person_details[0]}
+    history = db.execute("""SELECT * FROM matches m
+                            JOIN person_details p ON p.id = m.person_details_id1 
+                            OR p.id = m.person_details_id2
+                            WHERE username = ?""", username)
+
+    return {'photo_path': photo_path, 'details': person_details[0], 'history':history}
 
 
 @app.route('/findme', methods=['GET','POST'])

@@ -330,14 +330,14 @@ def portfolio():
         session['person_details_id'] = res.json()['person_details_id']
         return redirect(request.url)
 
-    res = requests.get('http://127.0.0.1:5001/portfolio', json={'person_details_id': session['person_details_id']})
+    res = requests.get('http://127.0.0.1:5001/portfolio', json={'username':session["username"], 'person_details_id': session['person_details_id']})
     
     data = res.json()
     session['photo_path'] = data['photo_path']
     default_profile =  'https://img.myloview.com/stickers/default-avatar-profile-icon-vector-social-media-user-photo-700-205577532.jpg'
     photo_path = "http://127.0.0.1:5001/get_image?photo_path=" + data['photo_path'] if data['photo_path'] else default_profile
 
-    return render_template('portfolio.html', photo_path=photo_path, details=data['details'])
+    return render_template('portfolio.html', photo_path=photo_path, details=data['details'], history=data['history'])
 
 
 @app.route('/findme', methods=['GET','POST'])

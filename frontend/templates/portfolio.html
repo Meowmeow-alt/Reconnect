@@ -75,22 +75,22 @@ Your Profile
                 <div>
                     <table class="table table-striped">
                         <thead>
-                          <tr>
-                            <th scope="col">Match ID</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Timestamp</th>
-                          </tr>
+                            <tr>
+                                <th scope="col">Match ID</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Timestamp</th>
+                            </tr>
                         </thead>
-                        <!-- <tbody>
-                          {% for user in users %}
-                          <tr>
-                            <td>{{ user.first }}</td>
-                            <td>{{ user.last }}</td>
-                            <td>{{ user.handle }}</td>
-                          </tr>
-                          {% endfor %}
+                        <tbody>
+                            {% for row in history %}
+                            <tr>
+                                <td>{{ row['id'] }}</td>
+                                <td>{{ row['status'] }}</td>
+                                <td>{{ row['created_at'] }}</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
-                      </table>                       -->
+                    </table>
                 </div>
             </div>
         </div>
