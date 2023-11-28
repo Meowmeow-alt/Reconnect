@@ -295,8 +295,6 @@ def result():
     if not any(s == 0 for s in status):
         return "No match at the moment.", 403
     
-    print("Hellooooooooooooo pairs", pairs)
-    
     """
     Matching result section
     """
@@ -306,8 +304,6 @@ def result():
 
     for session_id, pair_id in pairs:
         if session_id in ids or pair_id in ids:
-            print("Hellooooooooooooo session_id", session_id)
-            print("Hellooooooooooooo pair_id", pair_id)
             if session_id not in existed_ids and pair_id not in existed_ids:
                 user_details = db.execute("""SELECT p.*, i.photo_path
                                             FROM person_details p
