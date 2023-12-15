@@ -6,5 +6,6 @@
 
 ## Video Demo
 
-- This is the Link: youtu.be/kLe7HvBh_pI
+- This is the Link: https://youtu.be/kLe7HvBh_pI?feature=shared
+
 ![Video demo](frontend/static/img/web.png)
