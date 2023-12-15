@@ -15,5 +15,5 @@ def get_embed(img):
     return faces[0]['embedding']
 
 def read(file):
-    return cv2.cvtColor(cv2.imread(file), cv2.COLOR_BGR2RGB)
+    return cv2.imread(file)
      

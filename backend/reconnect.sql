@@ -17,15 +17,15 @@ CREATE TABLE matches (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   img1_id INTEGER,
   img2_id INTEGER,
-  person_details_id1 INTEGER,
-  person_details_id2 INTEGER,
-  status VARCHAR(50) NOT NULL,
+  pair_details_id INTEGER,
+  user_details_id INTEGER,
+  pair_accept_status INTEGER DEFAULT 0, -- 0:onsite, 1:decline 2:accepted
   match_score FLOAT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(img1_id) REFERENCES images(id),
   FOREIGN KEY(img2_id) REFERENCES images(id),
-  FOREIGN KEY(person_details_id1) REFERENCES person_details(id),
-  FOREIGN KEY(person_details_id2) REFERENCES person_details(id)
+  FOREIGN KEY(pair_details_id) REFERENCES person_details(id),
+  FOREIGN KEY(user_details_id) REFERENCES person_details(id)
 );
 CREATE TABLE person_details (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

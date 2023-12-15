@@ -8,7 +8,7 @@ import uuid
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import pickle
-import cv2
+import ast
 from insightface.app import FaceAnalysis
 from addition import get_embed, read
 
@@ -136,8 +136,9 @@ def search_post():
     db.execute("INSERT INTO images (photo_path, relationship) VALUES (?,?)", photo_path, relate)
 
     img_id = db.execute("SELECT last_insert_rowid() AS id")[0]["id"]
-    person_details_id = db.execute("INSERT INTO person_details (username, name, age, city, biological_sex, height, distinguishing_marks, phone, mail, last_seen_year, img_id)\
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)", username, name, age, city, sex, height, marks, phone, mail, last_seen, img_id)
+    person_details_id = db.execute("""INSERT INTO person_details 
+        (status, username, name, age, city, biological_sex, height, distinguishing_marks, phone, mail, last_seen_year, img_id)
+        VALUES (0,?,?,?,?,?,?,?,?,?,?,?)""", username, name, age, city, sex, height, marks, phone, mail, last_seen, img_id)
 
     img.save(photo_path)
 
@@ -159,7 +160,7 @@ def search_post():
 
     # numpy embeds
     if old_embeds.size > 0:
-        updated_embeds = np.vstack((old_embeds, embed)) if not any(np.array_equal(embed, old) for old in old_embeds) else None
+        updated_embeds = np.vstack((old_embeds, embed))
     else:
         updated_embeds = embed.reshape(1,-1)
 
@@ -167,10 +168,7 @@ def search_post():
         np.save('uploads.npy', updated_embeds)
 
     # pickle mapping
-    if not any(np.array_equal(embed, old) for old in old_embeds):
-        mapping.append(person_details_id)
-    else:
-        return "Fail to map", 403
+    mapping.append(person_details_id)
 
     with open('uploads.pkl', 'wb') as f:
         pickle.dump(mapping, f)
@@ -225,108 +223,171 @@ def result():
     """
     Prepare files and datas
     """
-    other_embeds = np.load('uploads.npy')
-    user_embeds = np.load('users.npy')
-    with open('uploads.pkl', 'rb') as f:
-        other_ids = pickle.load(f)
-    with open('users.pkl', 'rb') as f:
-        user_ids = pickle.load(f)
-
     data = request.get_json()
-    username = data['username']
+    id = data.get('id')
+    username = data.get('username')
 
-    people = db.execute("SELECT * FROM person_details WHERE username = ?", username)
-    status = [person['status'] for person in people]
+    try:
+        upload_embeds = np.load('uploads.npy') # embed của toàn bộ ảnh upload
+        user_embeds = np.load('users.npy') # embed của toàn bộ ảnh user 
+        with open('uploads.pkl', 'rb') as f:
+            pair_mapping_ids = pickle.load(f)
+        with open('users.pkl', 'rb') as f:
+            user_mapping_ids = pickle.load(f)
+    except:
+        return "Data have not existed", 403
 
-    ids = [person['id'] for person in people if person['status'] == 0]
-    filtered_ids = []
-    for id in ids:
-        find_me = db.execute("SELECT find_me FROM users WHERE person_details_id = ?", id)
-        if all(find['find_me'] != 0 for find in find_me):
-            filtered_ids.append(id) 
-    ids = filtered_ids
+    # lấy id của cùng username ngoại trừ session[‘id’] và có status = 0
+    pair_ids = db.execute("""SELECT id FROM person_details 
+                            WHERE username = ? AND status = 0 AND NOT id = ?""", 
+                            username, id)
+    pair_ids = [row['id'] for row in pair_ids]
+
+    # lấy index của những id trong pair_ids từ file pickle sau đó lấy embed trong file numpy
+    pair_indices = [pair_mapping_ids.index(pair_id) for pair_id in pair_ids]
+    pair_embeds = upload_embeds[pair_indices]
+
+    if pair_embeds.size < 1:
+        return "No pair upload to match", 403
+        
+    # User_embed filter ra những người đã bật find_me
+    user_ids = db.execute("SELECT person_details_id FROM users WHERE find_me = 1 AND NOT person_details_id = ?", id)
+    user_ids = [item['person_details_id'] for item in user_ids]
+    user_indices = [user_mapping_ids.index(user_id) for user_id in user_ids]
+    valid_user_embeds = user_embeds[user_indices]
+
+    # Cosine giữa pair_embeds với valid_user_embeds
+    matrix = cosine_similarity(pair_embeds, valid_user_embeds)
+    # Được một cái matrix - dòng là pair_embeds còn cột là valid_user_embeds
+
+    # Được những cặp ids cosine với nhau
+    threshold = 0.62
+    valid_pair_user_ids = []
+    for i in range(len(pair_ids)):
+        for j in range(len(user_ids)):
+            # so sánh với threshold
+            if matrix[i][j] >= threshold:
+                valid_pair_user_ids.append((pair_ids[i], user_ids[j]))
+    valid_pair_user_ids = np.array(valid_pair_user_ids)
+
+    # tìm value của user giống pair nhất
+    user_match_pair_ids = np.argmax(matrix, axis=1)
+    user_match_pair = matrix[np.arange(matrix.shape[0]), user_match_pair_ids]
+    thr_filter = user_match_pair > threshold
+
+    # tìm match_score
+    match_score = user_match_pair[thr_filter].tolist()
+
+    pairs_img_ids = []
+    query = "SELECT img_id FROM person_details WHERE id IN (?)"
+    for pairs in valid_pair_user_ids:
+        pairs = tuple(map(str,pairs))
+        img_ids = [row['img_id'] for row in db.execute(query, pairs)]
+        pairs_img_ids.append(tuple(img_ids))
+
+    # insert vào database
+    for i in range(len(valid_pair_user_ids)):
+        ids = valid_pair_user_ids.tolist()
+        check_matches = db.execute("""SELECT pair_details_id, user_details_id FROM matches 
+                                    WHERE pair_details_id = ? AND user_details_id = ?""",
+                                    ids[i][0], ids[i][1])
+
+        if not check_matches:
+            db.execute("""INSERT INTO matches 
+                    (img1_id,img2_id,pair_details_id,user_details_id,
+                    pair_accept_status,match_score) VALUES (?,?,?,?,0,?)""", 
+                    pairs_img_ids[i][0], pairs_img_ids[i][1], ids[i][0], ids[i][1], match_score[i])
+
+    pairs_photo_paths = []
+    query = "SELECT photo_path FROM images WHERE id IN (?)"
+    for pairs in pairs_img_ids:
+        # pairs = tuple(map(str,pairs))
+        photo_paths = [row['photo_path'] for row in db.execute(query, pairs)]
+        pairs_photo_paths.append(tuple(photo_paths))
     
-    """
-    Cosine similarity section
-    """
-    similarity_matrix = cosine_similarity(user_embeds, other_embeds)
+    data = "SELECT name,age FROM person_details WHERE id IN (?)"
+    try:
+        temp = tuple(map(str,valid_pair_user_ids[:,0]))
+    except:
+        return "No match result at the moment", 403
+    pair_data = db.execute(data, temp)
 
-    threshold = 0.56
-    pairs = []
-    for i in range(similarity_matrix.shape[0]):
-        for j in range(similarity_matrix.shape[1]):
-            number = similarity_matrix[i, j]
-            if number > threshold:
-                user_id = user_ids[i]
-                other_id = other_ids[j]
-                pairs.append((user_id, other_id))
+    match_score_list = [round(score,2) for score in match_score]
 
-    uu = [db.execute("""SELECT p.id, i.photo_path FROM images i
-                          JOIN person_details p ON p.img_id = i.id
-                          WHERE p.id = ?""", id)[0] for id, _ in pairs]
-    pp = [db.execute("""SELECT p.id, i.photo_path FROM images i
-                          JOIN person_details p ON p.img_id = i.id
-                          WHERE p.id = ?""", id)[0] for _, id in pairs]
+    status = []
+    infos = []
+    query = """SELECT pair_accept_status FROM matches 
+                WHERE pair_details_id = ? AND user_details_id = ?"""
+    for pairs in valid_pair_user_ids.tolist():
+        status_pairs = db.execute(query, pairs[0], pairs[1])[0]['pair_accept_status']
+        # một trong hai bên decline
+        if int(status_pairs) == 1:
+            status.append(1)
+        # pair accept - gửi match result cho bên user
+        elif int(status_pairs) == 2:
+            status.append(2)
+            info = db.execute("SELECT * FROM person_details WHERE id = ?", pairs[1])[0]
+            infos.append(info)
+        # trạng thái ban đầu
+        else:
+            status.append(0)
 
-    pairs = [(u['id'], p['id']) for u, p in zip(uu, pp) if u['photo_path'] != 'None' and p['photo_path'] != 'None']
+    return {'photo_paths':pairs_photo_paths, 'data':pair_data, 'match_score':match_score_list, 
+            'pairs':valid_pair_user_ids.tolist(), 'status':status, 'infos':infos}
 
-    for user_id, other_id in pairs:
-        try:
-            existing_match = db.execute("SELECT * FROM matches WHERE person_details_id1 = ? AND person_details_id2 = ?", user_id, other_id)[0]['match_score']
-        except:
-            existing_match = None
-        score = round(float(number),4)
 
-        if not existing_match:
-            img1_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", user_id)[0]['img_id']
-            img2_id = db.execute("SELECT img_id FROM person_details WHERE id = ?", other_id)[0]['img_id']
+@app.route('/decline', methods=['GET', 'POST'])
+def decline():
+    data = request.get_json()
+    pairs = ast.literal_eval(data.get('pairs'))
+    username = data.get('username')
+    id = data.get('id')
 
-            db.execute("INSERT INTO matches (img1_id, img2_id, person_details_id1, person_details_id2, status, match_score) VALUES (?, ?, ?, ?, 'onsite', ?)",
-                        img1_id, img2_id, user_id, other_id, score)
-            
-        if existing_match != score:
-            db.execute("UPDATE matches SET match_score = ? WHERE person_details_id1 = ? AND person_details_id2 = ?", score, user_id, other_id)
+    pair_ids = db.execute("""SELECT id FROM person_details 
+                            WHERE username = ? AND status = 0 AND NOT id = ?""", 
+                            username, id)
+    pair_ids = [row['id'] for row in pair_ids]
 
-    check = [None if id[0] not in ids and id[1] not in ids else 1 for id in pairs]
+    # pair decline - không gửi cho user luôn
+    db.execute("""UPDATE matches SET pair_accept_status = 1
+                  WHERE pair_details_id = ? AND user_details_id = ?""",
+                  pairs[0], pairs[1])
+
+    return "Success", 200
+
+
+@app.route('/accept', methods=['GET','POST'])
+def accept():
+    data = request.get_json()
+    pairs = ast.literal_eval(data.get('pairs'))
+    username = data.get('username')
+    id = data.get('id')
+
+    pair_ids = db.execute("""SELECT id FROM person_details 
+                            WHERE username = ? AND status = 0 AND NOT id = ?""", 
+                            username, id)
+    pair_ids = [row['id'] for row in pair_ids]
+
+    # pair accept - gửi cho user match result
+    db.execute("""UPDATE matches SET pair_accept_status = 2
+                  WHERE pair_details_id = ? AND user_details_id = ?""",
+                  pairs[0], pairs[1])
+
+    return "Success", 200
+
+
+@app.route('/contact', methods=['GET','POST'])
+def contact():
+    data = request.get_json()
+    person_details_id = data.get('person_details_id')
+
+    info = db.execute("SELECT name, mail FROM person_details WHERE id = ?", person_details_id)
+
+    if not info:
+        return "Something went wrong", 403
     
-    if not check:
-        return "No match at the moment", 403
+    return {'info':info}
 
-    if not any(s == 0 for s in status):
-        return "No match at the moment.", 403
-    
-    """
-    Matching result section
-    """
-    user = []
-    pair = []
-    existed_ids = []
-
-    for session_id, pair_id in pairs:
-        if session_id in ids or pair_id in ids:
-            if session_id not in existed_ids and pair_id not in existed_ids:
-                user_details = db.execute("""SELECT p.*, i.photo_path
-                                            FROM person_details p
-                                            JOIN images i ON p.img_id = i.id
-                                            WHERE p.id = ?
-                                        """, session_id)
-                pair_details = db.execute("""SELECT p.*, i.photo_path
-                                            FROM person_details p
-                                            JOIN images i ON p.img_id = i.id
-                                            WHERE p.id = ?
-                                        """, pair_id)
-                user.append(user_details[0])
-                pair.append(pair_details[0])
-                existed_ids.append(session_id)
-                existed_ids.append(pair_id)
-
-    return {'user':user, 'pair':pair}
-
-
-# @app.route('/decline', methods=['GET'])
-# def decline():
-#     f
-    
 
 """
 # ROUTE FOR SIDE PAGE ON NAVBAR
@@ -381,13 +442,12 @@ def portfolio_post():
     if old_embeds.size == 0:
         updated_embeds = embed.reshape(1,-1)
     else:
-        updated_embeds = np.vstack((old_embeds, embed)) if not any(np.array_equal(embed, old) for old in old_embeds) else None
+        updated_embeds = np.vstack((old_embeds, embed))
     if updated_embeds is not None:
         np.save('users.npy', updated_embeds)
 
     # pickle mapping
-    if not any(np.array_equal(embed, old) for old in old_embeds):
-        mapping.append(int(person_details_id))
+    mapping.append(int(person_details_id))
 
     with open('users.pkl', 'wb') as f:
         pickle.dump(mapping, f)
@@ -398,24 +458,24 @@ def portfolio_post():
 @app.route('/portfolio', methods=['GET'])
 def portfolio_get():
     data = request.get_json()
-    person_details_id = data.get('person_details_id')
+    id = data.get('person_details_id')
     username = data.get('username')
 
     photo_path = db.execute(""" SELECT photo_path
                                 FROM images
                                 JOIN person_details ON images.id = person_details.img_id
-                                WHERE person_details.id = ?""", person_details_id)
+                                WHERE person_details.id = ?""", id)
     
     person_details = db.execute(""" SELECT p.*, u.find_me
                                     FROM person_details p
-                                    JOIN users u ON u.person_details_id = ?
-                                    WHERE id = ?""", person_details_id, person_details_id)
+                                    JOIN users u ON u.person_details_id = p.id
+                                    WHERE id = ?""", id)
     
     photo_path = photo_path[0]['photo_path'] if photo_path else None
 
     history = db.execute("""SELECT * FROM matches m
-                            JOIN person_details p ON p.id = m.person_details_id1 
-                            OR p.id = m.person_details_id2
+                            JOIN person_details p ON p.id = m.pair_details_id 
+                            OR p.id = m.user_details_id
                             WHERE username = ?""", username)
 
     return {'photo_path': photo_path, 'details': person_details[0], 'history':history}
