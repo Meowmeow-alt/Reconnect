@@ -4,6 +4,6 @@
 
 ![Database structure](frontend/static/img/database.png)
 
-## Video Demo
+## [Video Demo](youtu.be/kLe7HvBh_pI)
 
 ![Video demo](frontend/static/img/web.png)
