@@ -6,4 +6,5 @@
 
 ## Video Demo
 
-![[Video demo](frontend/static/img/web.png)](youtu.be/kLe7HvBh_pI)
+- This is the Link: youtu.be/kLe7HvBh_pI
+![Video demo](frontend/static/img/web.png)
