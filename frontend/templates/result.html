@@ -18,32 +18,66 @@ Public Finding
         {% endwith %}
 
         <div class="row">
-            {% for i in range(user|length) %}
+            {% for i in range(photo_paths|length) %}
             <div class="col-sm-4 mb-3">
                 <div class="boxes">
                     <div class="row gx-0">
                         <div class="col-sm-6">
                             <div style="height: 40vh;">
-                                <img src="{{ user[i]['photo_path'] }}">
+                                <img src="{{ photo_paths[i][0] }}">
                             </div>
                         </div>
 
                         <div class="col-sm-6">
                             <div style="height: 40vh;">
-                                <img src="{{ pair[i]['photo_path'] }}">
+                                <img src="{{ photo_paths[i][1] }}">
                             </div>
                         </div>
                     </div>
 
                     <div class="card-header" style="text-align:center;">Match!</div>
-                    <div class="p-3">
-                        <div style="text-align: center;">
-                            <h2 style="color: black;">Name: {{ user[i]['name'] }}</h2>
-                            <button href="/accept" class="btn btn-danger">Decline Request</button>
-                            <button href="/decline" class="btn btn-success">Accept Request</button>
+                    <div class="p-4 row">
+                        <div class="col-md-8">
+                            <h4 style="color: black;">Name: {{ data[i]['name'] }}</h4>
+                            <h4 style="color: black;">Match score: {{ match_score[i] }}</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <h4 style="color: black;">Age: {{ data[i]['age'] }}</h4>
+                            <h4 style="color: black;">Ids: {{ pairs[i][0] }}-{{ pairs[i][1] }}</h4>
                         </div>
                     </div>
+                    {% if status[i] == 1 %}
+                        <div class="alert alert-danger mx-3">This match result has been declined</div>
+                    {% elif status[i] == 2 %}
+                    <div style="text-align: center;">
+                        <script type="text/javascript">
+                            var infos = {{ infos | tojson }};
+                        </script>
+                        
+                        <button class="btn btn-success" onclick="momodal({{ i }})" style="width:80%;">Keep In Touch Now!</button>
 
+                        <!-- html modal -->
+                        <div class="nenmodal" id="nenmodal-1">
+                            <div class="nenmodal2"></div>
+                            <div class="ndmodal">
+                                <div class="closemodal"><button onclick="momodal()">×</button></div>
+                                <div class="titlemodal">Other User's Information</div>
+                                <div id="contentContainer"></div> <!-- New div for the content -->
+                            </div>
+                        </div>                        
+                    </div>
+                    {% else %}
+                    <div class="d-flex justify-content-center">
+                        <form action="/decline" method="post">
+                            <input type="hidden" name="pairs" value="{{ pairs[i] }}">
+                            <input type="submit" id="decline" value="Decline Request" class="btn btn-danger">
+                        </form>
+                        <form action="/accept" method="post">
+                            <input type="hidden" name="pairs" value="{{ pairs[i] }}">
+                            <input type="submit" id="accept" value="Accept Request" class="btn btn-success">
+                        </form>                        
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}

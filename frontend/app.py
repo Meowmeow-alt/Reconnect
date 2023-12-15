@@ -73,13 +73,15 @@ def register():
         password = request.form.get("password")
         confirm = request.form.get("confirmation")
 
+        if len(username) > 20 or len(username) < 4:
+            flash("Username includes more than 4 and less than 20 characters")
         if not username or not password:
             flash("must provide username/password")
             return redirect(request.url)
         if password != confirm or not confirm:
             flash("Password and confirmation do not match!")
             return redirect(request.url)
-        
+
         res = requests.post('http://127.0.0.1:5001/register', json={'username':username, 'password':password})
 
         if res.status_code == 403 or res.status_code == 500:
@@ -138,7 +140,7 @@ def personal():
 
         data = res.json()
         session['person_details_id'] = data['person_details_id']
-        return redirect('/')
+        return redirect('/consent')
 
     with open('json/location.json', 'r') as f:
             location = json.load(f)
@@ -264,44 +266,66 @@ def delete():
 @app.route('/result', methods=['GET'])
 @login_required
 def result():
-    res = requests.get('http://127.0.0.1:5001/result', json={'username': session["username"]})
-    
+    res = requests.get('http://127.0.0.1:5001/result', json={'id':session["person_details_id"], 'username': session["username"]})
+
     if res.status_code == 403 or res.status_code == 500:
         flash(res.text)
         return render_template('result.html')
-    
+
     try:
         data = res.json()
-    except requests.exceptions.JSONDecodeError:
-        flash("No data to decode")
+    except:
+        flash("No match result at the moment")
         return render_template('result.html')
     
-    for person in data['user']:
-        person['photo_path'] = "http://127.0.0.1:5001/get_image?photo_path=" + person['photo_path']
-    for person in data['pair']:
-        person['photo_path'] = "http://127.0.0.1:5001/get_image?photo_path=" + person['photo_path']
+    for i in range(len(data['photo_paths'])):
+        for j in range(len(data['photo_paths'][0])):
+            data['photo_paths'][i][j] = "http://127.0.0.1:5001/get_image?photo_path=" + data['photo_paths'][i][j]
+        
+    print("Helloooooooo0", data['infos'])
+    print("Helloooooooo0", data['photo_paths'])
+
     
-    return render_template('result.html', user=data['user'], pair=data['pair'])
+    return render_template('result.html', photo_paths=data['photo_paths'], data=data['data'], match_score=data['match_score'], 
+            pairs=data['pairs'], status=data['status'], infos=data['infos'])
 
 
 @app.route('/decline', methods=['POST'])
-@login_required
 def decline():
-    # id = request.form.get('id')
-    # photo_path = request.form.get('photo_path')
-    # res = requests.post('http://127.0.0.1:5001/delete', json={'id':id, 'photo_path':photo_path})
+    pairs = request.form.get('pairs')
+    res = requests.post('http://127.0.0.1:5001/decline', json={'id':session['person_details_id'],'username':session["username"],'pairs': pairs})
 
-    # if res.status_code == 403 or res.status_code == 500:
-    #     flash(res.text)
-    #     return redirect(request.url)
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+        return redirect(request.url)
     
     return redirect('/result')
 
 
-@app.route('/contact', methods=['GET','POST'])
+@app.route('/accept', methods=['POST'])
+def accept():
+    pairs = request.form.get('pairs')
+    res = requests.post('http://127.0.0.1:5001/accept', json={'id':session['person_details_id'],'username':session["username"],'pairs': pairs})
+
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+        return redirect(request.url)
+    
+    return redirect('/result')
+
+
+@app.route('/contact', methods=['GET'])
 @login_required
 def contact():
-    return render_template('contact.html')
+    res = requests.get('http://127.0.0.1:5001/contact', json={'person_details_id': session['person_details_id']})
+    
+    if res.status_code == 403 or res.status_code == 500:
+        flash(res.text)
+        return render_template('contact.html')
+    
+    data = res.json()['info'][0]
+    
+    return render_template('contact.html', name=data['name'], mail=data['mail'])
 
 
 """
@@ -356,6 +380,12 @@ def findme():
 def disable_findme():
     requests.post('http://127.0.0.1:5001/disable_findme', json={'username':session['username']})
     return redirect('/portfolio')
+
+
+@app.route('/consent', methods=['GET','POST'])
+@login_required
+def consent():
+    return render_template('consent.html')
 
 
 

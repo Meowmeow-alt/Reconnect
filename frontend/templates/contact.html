@@ -6,5 +6,45 @@ Contact Page
 
 {% block body %}
     {% include "backbar.html" %}
-    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center vh-100">
+                <div class="box container" style="max-width: 30vw;">
+                    <div class="card-header" style="text-align: center;">Contact Us</div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages() %}
+                            {% if messages and messages[0] %}
+                            <div class="alert alert-warning">
+                                {{ messages[0] }}
+                            </div>
+                            {% endif %}
+                        {% endwith %}
+                        <form action="https://formsubmit.co/roraau0311@gmail.com" method="POST">
+                            <input type="hidden" name="_captcha" value="false">
+                            <input type="hidden" name="name" value="{{ name }}" required>
+                            <input type="hidden" name="email" value="{{ mail }}" required>
+                            <div class="form-group my-3">
+                                <label for="feedback">Your feedback</label>
+                                <input type="text" class="form-control" name="feedback" id="feedback" autofocus required>
+                            </div>
+                            <div class="my-4" style="text-align: center;">
+                                <button class="login my-2" type="submit">Submit form</button>
+                                <br>
+                                <a href="#" class="fa fa-facebook"></a>
+                                <a href="#" class="fa fa-twitter"></a>
+                                <a href="#" class="fa fa-instagram"></a>
+                                <a href="#" class="fa fa-youtube"></a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="vh-100 welcome">
+                <h1 class="pt-5" style="font-size: 70px;">We'd love to<br>hear from you.</h1>
+            </div>
+        </div>
+    </div>
 {% endblock %}

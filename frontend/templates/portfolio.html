@@ -85,7 +85,7 @@ Your Profile
                             {% for row in history %}
                             <tr>
                                 <td>{{ row['id'] }}</td>
-                                <td>{{ row['status'] }}</td>
+                                <td>{{ 'Deleted' if row['pair_accept_status'] == 1 else 'Onsite' }}</td>
                                 <td>{{ row['created_at'] }}</td>
                             </tr>
                             {% endfor %}
