@@ -19,6 +19,7 @@ This platform is designed to heal broken relationships and promote reunion. It i
 ## VIDEO DEMO
 
 - This is the Link: https://youtu.be/kLe7HvBh_pI?feature=shared
+- This is the Link: [Slide pitching](https://trunghocthuchanhdhspeduvn-my.sharepoint.com/:p:/g/personal/tranchanhthuannk22-25_trunghocthuchanhdhsp_edu_vn/EVeD3IBQUOpKg7095EiiNDQBnvxY8K-LB9d6FuoCHF_HWw?e=bfJKkF)
 
 ![Video demo](frontend/static/img/web.png)
 
