@@ -1,8 +1,6 @@
 venv
 __pycache__/
 **/flask_session/
-test.ipynb
-test.py
 .DS_Store
 backend/reconnect.db
 backend/img
